@@ -19,7 +19,7 @@ class Command(AppCommand):
         
         for entry in args:
             app, model = entry.split(".")
-            print("MODEL: %s" % model)
+            print("CHECKING FOR MODEL: %s" % model)
             self.process(app, model)
         
         
@@ -63,11 +63,6 @@ class Command(AppCommand):
             return
 
         print('Creating Model: %s' % model)
-
-        # LOOK FOR IMPORT LINES IN HEADER
-        print(' Model Import: %s' % model_import)
-        print('Import Exists: %s' % import_line)
-        print(' Entry Exists: %s' % import_entry)
         
         if not import_entry:
             # FIND WHERE TO ADD THE IMPORT LINE
