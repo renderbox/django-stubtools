@@ -1,4 +1,5 @@
 from django.core.management.base import AppCommand, CommandError
+from stubcore import class_name
 import re, os.path
 import ast
 
@@ -39,7 +40,7 @@ class Command(AppCommand):
         
         if use_class_based_views:
             views = [ x.name for x in ast.parse(data).body if isinstance(x, ast.ClassDef) ]   # BEST PYTHON WAY TO DO THIS
-            view_name = ("%sView" % (argDict['page'][0].capitalize() + argDict['page'][1:]) )
+            view_name = ( "%sView" % ( class_name( argDict['page'] ) ) )
             view_import_path = "%s.views.%s.as_view()" % (argDict['app'], view_name)
             
             # CHECK IMPORT LINES
