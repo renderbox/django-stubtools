@@ -8,7 +8,7 @@ setup(name='django-stubtools',
       license = "BSD",
       keywords = "django app",
       #homepage = "https://github.com/renderbox/django-stubtools",
-      packages=['stubtools'],
+      packages=['stubtools', 'stubtools.core', 'stubtools.management', 'stubtools.management.commands', 'stubtools.tests'],
       #long_description=read('README'),
       classifiers=[
           "Development Status :: 3 - Alpha",
