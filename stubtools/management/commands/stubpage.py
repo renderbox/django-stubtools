@@ -1,5 +1,5 @@
 from django.core.management.base import AppCommand, CommandError
-from stubcore import class_name
+from stubtools.core import class_name
 import re, os.path
 import ast
 

@@ -1,6 +1,6 @@
 from django.core.management.base import AppCommand, CommandError
 import re, os.path
-from stubcore import underscore_camel_case, import_line_check, class_name
+from stubtools.core import underscore_camel_case, import_line_check, class_name
 
 
 class Command(AppCommand):
