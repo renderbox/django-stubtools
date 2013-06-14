@@ -11,4 +11,5 @@ stubtools/management/commands/stubform.py
 stubtools/management/commands/stubmodel.py
 stubtools/management/commands/stubout.py
 stubtools/management/commands/stubpage.py
+stubtools/management/commands/stubsetup.py
 stubtools/tests/__init__.py

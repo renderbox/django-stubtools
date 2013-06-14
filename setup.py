@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(name='django-stubtools',
-      version='0.4.0',
+      version='0.4.1',
       author = "Grant Viklund",
       author_email = "gviklund@backcode.com",
       description = "A set of tools for Django to help 'stub-out' an app quickly.",

@@ -1,4 +1,7 @@
 import re, os.path
+from django.core.management.base import AppCommand
+from django.conf import settings
+from stubtools.exceptions import NoProjectPathException
 
 def underscore_camel_case(s):
     """Adds spaces to a camel case string.  Failure to space out string returns the original string.
@@ -27,3 +30,19 @@ def import_line_check(regex, text, module):
 
 def class_name(str):
     return str[:1].upper() + str[1:]
+
+
+class StubRootCommand(AppCommand):
+    """This checks to make sure there is a Project Root path in the Config file"""
+
+    def handle(self, *args, **options):
+        try:
+            root_path = settings.PROJECT_PATH
+        except:
+            try:
+                root_path = settings.PROJECT_ROOT
+            except:
+                project_name = settings.ROOT_URLCONF.split(".")[0]
+
+                raise NoProjectPathException(project_name)
+
