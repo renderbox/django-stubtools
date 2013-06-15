@@ -156,7 +156,7 @@ class Command(AppCommand):
         else:
             FILE = open(url_file, "w")
 
-            if version_check("1.5.0", "gte"):
+            if version_check("gte", "1.5.0"):
                 url_py = ["from django.conf.urls import *\n", "urlpatterns = patterns(''," ]
             else:
                 url_py = ["from django.conf.urls.defaults import *\n", "urlpatterns = patterns(''," ]

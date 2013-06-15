@@ -48,18 +48,30 @@ class StubRootCommand(AppCommand):
                 raise NoProjectPathException(project_name)
 
 
-def version_check(vcheck, mode="gte"):
-    '''Checks the production version against the one passed in'''
+def version_check(mode="gte", vcheck="0.0.0"):
+    '''
+    Checks the production version against the one passed in.  Assumes a
+    version number that looks like this: 1.0.0
+
+    5 modes:
+        gt -> Greater Than 
+        gte -> Greater Than or Equal
+        lt ->  Less Than
+        lte -> Less Than or Equal
+        eq -> Equal
+    '''
 
     django_version = [int(x) for x in django.get_version().split(".")]
     check_version = [int(x) for x in vcheck.split(".")]
 
+    # MAKE SURE THE PASSED IN VERSION HAS 3 VALUES
     if len(check_version) < 3:
         check_version.append(0)
 
     if len(check_version) < 3:
         check_version.append(0)
 
+    # DETERMINE THE CHECK MODES
     if mode == "gt" and django_version > check_version:
         return True
 
@@ -70,6 +82,9 @@ def version_check(vcheck, mode="gte"):
         return True
 
     if mode == "lt" and django_version < check_version:
+        return True
+
+    if mode == "eq" and django_version = check_version:
         return True
 
     return False
