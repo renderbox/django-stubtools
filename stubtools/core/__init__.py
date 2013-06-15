@@ -2,6 +2,7 @@ import re, os.path
 from django.core.management.base import AppCommand
 from django.conf import settings
 from stubtools.exceptions import NoProjectPathException
+import django
 
 def underscore_camel_case(s):
     """Adds spaces to a camel case string.  Failure to space out string returns the original string.
@@ -45,4 +46,31 @@ class StubRootCommand(AppCommand):
                 project_name = settings.ROOT_URLCONF.split(".")[0]
 
                 raise NoProjectPathException(project_name)
+
+
+def version_check(vcheck, mode="gte"):
+    '''Checks the production version against the one passed in'''
+
+    django_version = [int(x) for x in django.get_version().split(".")]
+    check_version = [int(x) for x in vcheck.split(".")]
+
+    if len(check_version) < 3:
+        check_version.append(0)
+
+    if len(check_version) < 3:
+        check_version.append(0)
+
+    if mode == "gt" and django_version > check_version:
+        return True
+
+    if mode == "gte" and django_version >= check_version:
+        return True
+
+    if mode == "lte" and django_version <= check_version:
+        return True
+
+    if mode == "lt" and django_version < check_version:
+        return True
+
+    return False
 

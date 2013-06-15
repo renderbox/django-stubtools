@@ -1,7 +1,8 @@
 from django.core.management.base import AppCommand, CommandError
-from stubtools.core import class_name
+from stubtools.core import class_name, version_check
 import re, os.path
 import ast
+import django
 
 class Command(AppCommand):
     args = '<app page_name>'
@@ -155,7 +156,10 @@ class Command(AppCommand):
         else:
             FILE = open(url_file, "w")
 
-            url_py = ["from django.conf.urls.defaults import *\n", "urlpatterns = patterns(''," ]
+            if version_check("1.5.0", "gte"):
+                url_py = ["from django.conf.urls import *\n", "urlpatterns = patterns(''," ]
+            else:
+                url_py = ["from django.conf.urls.defaults import *\n", "urlpatterns = patterns(''," ]
             
             if argDict['page'] == "index":
                 url_py.append( "\turl(r'^/$', '%s', name='%s'), )" % ( view_import_path, url_name ) )
