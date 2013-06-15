@@ -7,7 +7,7 @@ setup(name='django-stubtools',
       description = "A set of tools for Django to help 'stub-out' an app quickly.",
       license = "BSD",
       keywords = "django app",
-      homepage = "http://github.com/backcode/django-stubtools",
+      home_page = "http://github.com/backcode/django-stubtools",
       packages=['stubtools', 'stubtools.core', 'stubtools.management', 'stubtools.management.commands', 'stubtools.tests'],
       classifiers=[
           "Development Status :: 4 - Beta",
