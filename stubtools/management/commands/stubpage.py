@@ -162,9 +162,9 @@ class Command(AppCommand):
                 url_py = ["from django.conf.urls.defaults import *\n", "urlpatterns = patterns(''," ]
             
             if argDict['page'] == "index":
-                url_py.append( "\turl(r'^/$', '%s', name='%s'), )" % ( view_import_path, url_name ) )
+                url_py.append( "\turl(r'^/$', '%s', name='%s'),\n)" % ( view_import_path, url_name ) )
             else:
-                url_py.append( "\turl(r'^%s/$', '%s', name='%s'), )" % ( argDict['page'], view_import_path, url_name ) )
+                url_py.append( "\turl(r'^%s/$', '%s', name='%s'),\n)" % ( argDict['page'], view_import_path, url_name ) )
 
             FILE.write( "\n".join(url_py) + "\n" )
             FILE.close()

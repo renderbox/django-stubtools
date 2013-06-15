@@ -84,7 +84,7 @@ def version_check(mode="gte", vcheck="0.0.0"):
     if mode == "lt" and django_version < check_version:
         return True
 
-    if mode == "eq" and django_version = check_version:
+    if mode == "eq" and django_version == check_version:
         return True
 
     return False
