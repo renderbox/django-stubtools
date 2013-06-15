@@ -23,12 +23,17 @@ class Command(StubRootCommand):
         self.staticPathSetup()
 
     def splitConfigSetup(self):
+        '''
+        This sets up the split config that works really well for deployments.  It seperates
+        the different deployment options and allows you to override different config settings
+        depending on deployment.
+        '''
         print "CHECKING FOR DIVIDED SETTINGS"
 
         project_name = settings.ROOT_URLCONF.split(".")[0]
         settings_file = os.path.join(settings.PROJECT_PATH, project_name, "settings.py")
         if not os.path.isfile( settings_file ):
-            print "\tYOU ARE USING A SPLIT CONFIG, GOOD FOR YOU!"
+            print "\tYOU ARE USING A SPLIT CONFIG!"
         else:
             print "\tYOU ARE USING A SINGLE CONFIG FILE, LETS BREAK THAT UP."
 
@@ -43,7 +48,6 @@ class Command(StubRootCommand):
             open(settings_init_file, 'w').close()
 
         settings_file_c = settings_file + "c"
-        print settings_file_c
         if os.path.exists(settings_file_c):
             os.remove(settings_file_c)
 
@@ -85,7 +89,6 @@ class Command(StubRootCommand):
 
             FILE.writelines("\n".join(lines))
             FILE.close()
-
 
         # CREATE THE PRODUCTION SERVER FILE
         dev_settings_file = os.path.join(settings_dir, "production.py")
@@ -138,7 +141,6 @@ class Command(StubRootCommand):
 
             FILE.writelines("\n".join(lines))
             FILE.close()
-
 
 
     def templatePathSetup(self):
