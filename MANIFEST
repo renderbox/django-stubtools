@@ -13,4 +13,8 @@ stubtools/management/commands/stubmodel.py
 stubtools/management/commands/stubout.py
 stubtools/management/commands/stubpage.py
 stubtools/management/commands/stubsetup.py
+stubtools/templates/__init__.py
+stubtools/templates/base_html.txt
+stubtools/templates/dev_py.txt
+stubtools/templates/production_py.txt
 stubtools/tests/__init__.py
