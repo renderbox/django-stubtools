@@ -132,6 +132,8 @@ class Command(StubRootCommand):
         if not os.path.exists(dev_settings_file):
             FILE = open(dev_settings_file, 'w')
 
+            # COULD USE TO MOVE THIS TO A TEMPLATE FILE FOR EASIER MAINTINACE
+
             lines = ["from base import *"]
 
             lines.append("\n# DATABASES = {")
