@@ -11,16 +11,46 @@ class Command(StubRootCommand):
     help = 'sets-up folder structure for django files and directories if missing from a given project.'
     tab = "    "
 
-
     def handle(self, *args, **options):
         super(Command, self).handle()
         self.process()
 
+    def checkInput(self, question, default="n", choices=["y","n"]):
+
+        tags = []
+
+        for x in choices:
+            if x == default:
+                tags.append(x.upper())
+            else:
+                tags.append(x)
+
+        tag = "[" + "/".join(tags) + "]"
+
+        result = raw_input(question + " " + tag)
+        result = result.lower()
+
+        if result == "":
+            result = default
+
+        if result in choices:
+            return result
+
+        return self.checkInput(question, default=default, choices=choices)  # Ask the question again if the choice is incorrect
 
     def process(self):
-        self.splitConfigSetup()
-        self.templatePathSetup()
-        self.staticPathSetup()
+
+        result = self.checkInput("Do you want to set-up a split config?")
+        if result == "y":
+            self.splitConfigSetup()
+
+        result = self.checkInput("Do you want to set-up tempalte paths?")
+        if result == "y":
+            self.templatePathSetup()
+
+        result = self.checkInput("Do you want to set-up static paths?")
+        if result == "y":
+            self.staticPathSetup()
 
     def splitConfigSetup(self):
         '''
@@ -33,9 +63,10 @@ class Command(StubRootCommand):
         project_name = settings.ROOT_URLCONF.split(".")[0]
         settings_file = os.path.join(settings.PROJECT_PATH, project_name, "settings.py")
         if not os.path.isfile( settings_file ):
-            print "\tYOU ARE USING A SPLIT CONFIG!"
+            print "\tConfig File already Split Up!"
+            return
         else:
-            print "\tYOU ARE USING A SINGLE CONFIG FILE, LETS BREAK THAT UP."
+            print "\tSingle Config File detected, let's break that up."
 
         settings_dir = os.path.join(settings.PROJECT_PATH, project_name, "settings")
 
@@ -142,7 +173,6 @@ class Command(StubRootCommand):
             FILE.writelines("\n".join(lines))
             FILE.close()
 
-
     def templatePathSetup(self):
         print "\nCHECKING FOR TEMPLATE PATH"
 
@@ -159,7 +189,6 @@ class Command(StubRootCommand):
                 os.makedirs(directory)
             else:
                 print "\tDirectory Exists: %s" % directory
-
 
     def staticPathSetup(self):
         print "\nCHECKING FOR STATIC PATHS"
