@@ -130,7 +130,7 @@ class Command(AppCommand):
                     '</head>',
                     '<body>',
                     '\t<h1>%(app)s - %(page)s, Stub Page</h1>' % argDict,
-                    '\t<a href="{% url ' + '%(url_name)s' % argDict + ' %}">link</a>',
+                    '\t<a href="{% url ' + "'%(url_name)s'" % argDict + ' %}">link</a>',
                     '</body>\n</html>']
 
             FILE.write( "\n".join(html) )
