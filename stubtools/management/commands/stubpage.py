@@ -158,9 +158,6 @@ class Command(AppCommand):
             except IOError as e:
                 print( "IO Error reading %s, Step Skipped.\n\t%s" % (view_file, e) )
             
-            print urls
-            print argDict['view_import_path']
-
             if argDict['view_import_path'] + "," not in urls:   # Make sure to add the comma, which is caught by the regex pattern
                 FILE = open(url_file, "a")
 
