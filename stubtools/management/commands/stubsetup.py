@@ -2,6 +2,8 @@ import sys
 import inspect
 import re
 import os.path
+import urllib
+import zipfile
 from django.core.management.base import AppCommand, CommandError
 from django.conf import settings
 #import ast
@@ -51,6 +53,10 @@ class Command(StubRootCommand):
         result = self.checkInput("Do you want to set-up static paths?")
         if result == "y":
             self.staticPathSetup()
+
+        result = self.checkInput("Do you want to get Twitter Bootstrap?")
+        if result == "y":
+            self.getTwitterBootstrap()
 
     def splitConfigSetup(self):
         '''
@@ -210,6 +216,58 @@ class Command(StubRootCommand):
                     print "\tDirectory Exists: %s" % directory
 
 
+    def getTwitterBootstrap(self):
+        url = "http://twitter.github.io/bootstrap/assets/bootstrap.zip"
+
+        # SETUP THE DESTINATION PATH
+        tmpdir = os.path.join(settings.PROJECT_PATH, "_tmp")
+        tmpfile = os.path.join(settings.PROJECT_PATH, "_tmp", url.split("/")[-1])
+
+        # DOWNLOAD
+        print "Downloading '%s' \n\tto '%s'" % (url, tmpfile)
+        if not os.path.exists(tmpdir):
+            os.makedirs(tmpdir)
+        urllib.urlretrieve(url, tmpfile)
+        print "Download Complete"
+
+        # DECOMPRESS
+        try:
+            z = zipfile.ZipFile(tmpfile)
+        except zipfile.error, e:
+            print "Bad zipfile (from %r): %s" % (theurl, e)
+            return
+
+        z.extractall(tmpdir)
+        z.close()
+        os.remove(tmpfile)
+
+        # MOVE TO THE RIGHT LOCATIONS
+        bsdir = os.path.join(tmpdir, 'bootstrap')
+        bsdirlen = len(bsdir) + 1
+        staticdir = settings.STATICFILES_DIRS[0]
+
+        # PREPARE THE LIST
+        dir_list = []
+        cleanup_list = []
+
+        for (path, dirs, files) in os.walk(bsdir):
+            cleanup_list.append(path)
+            reldir = path[bsdirlen:]
+            for f in files:
+                dir_list.append(os.path.join(reldir, f))
+        
+        # print dir_list
+
+        for item in dir_list:
+            os.rename(os.path.join(bsdir, item), os.path.join(staticdir, item))
+
+        # NEED TO ADD CLEANUP OF tmp DIRECTORIES
+        # cleanup_list.reverse()
+        # for item in cleanup_list:
+        #     os.remove(item)
+        # os.remove(tmpdir)
+
+        # SETUP THE base.html FILE
 
 
 
