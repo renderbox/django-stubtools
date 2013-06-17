@@ -13,18 +13,24 @@ class Command(AppCommand):
             raise CommandError('Need to pass App.Page names')
             
         parts = args[0].split(".")
-        tab = "\t"
 
         # Using a Dictionary for clarity in strin replacements
         argDict = {'app':parts[0], 'page':parts[1].lower()}
+        tab = "\t"
+        argDict['tab'] = " " * 4
         
-        use_class_based_views = True        # SHOULD DEFAULT FOR 1.3+ TO True.  NEED ATTR IN settings.py TO CONFIG SET TO FALSE.
+        use_class_based_views = version_check("gte", "1.3.0")        # SHOULD DEFAULT FOR 1.3+ TO True.  NEED ATTR IN settings.py TO CONFIG SET TO FALSE.
         
         #from django.views.generic import TemplateView
         view_file = "%(app)s/views.py" % argDict
-        
+        argDict['view_file'] = view_file
+
         views = []
-        url_entry_regex = re.compile("url\(\S+ '(\S+)'" )
+
+        if use_class_based_views:
+            url_entry_regex = re.compile("url\(\S+ (\S+)" )
+        else:
+            url_entry_regex = re.compile("url\(\S+ '(\S+)'" )
         
         # Get contents of views.py file
         if os.path.isfile(view_file): 
@@ -33,7 +39,7 @@ class Command(AppCommand):
                 data = FILE.read()
                 FILE.close()
             except IOError as e:
-                print( "IO Error reading %s\n\t%s" % (view_file, e) )
+                print( "IO Error reading %s\n\t%s" % (view_file, tab, e) )
                 return
         
         insert_line = None
@@ -42,7 +48,8 @@ class Command(AppCommand):
         if use_class_based_views:
             views = [ x.name for x in ast.parse(data).body if isinstance(x, ast.ClassDef) ]   # BEST PYTHON WAY TO DO THIS
             view_name = ( "%sView" % ( class_name( argDict['page'] ) ) )
-            view_import_path = "%s.views.%s.as_view()" % (argDict['app'], view_name)
+            view_import_path = "views.%s.as_view()" % (view_name)
+            argDict['view_import_path'] = view_import_path
             
             # CHECK IMPORT LINES
             importers = { v.module : v for v in ast.parse(data).body if isinstance(v, ast.ImportFrom) }
@@ -64,8 +71,10 @@ class Command(AppCommand):
             views = [ x.name for x in ast.parse(data).body if isinstance(x, ast.FunctionDef) ]   # BEST PYTHON WAY TO DO THIS
             view_name = ("%(page)s_view" % argDict)
             view_import_path = "%(app)s.views.%(page)s_view" % argDict
+            argDict['view_import_path'] = view_import_path
             
         url_name = "%(app)s-%(page)s" % argDict
+        argDict['url_name'] = url_name
         template = "%(app)s/%(page)s.html" % argDict
         
         FILE = open(view_file, "r")
@@ -87,11 +96,11 @@ class Command(AppCommand):
                 # CHECK FOR IMPORT LINE IN FILE
 
                 lines.extend( [ "class %s(TemplateView):\n" % view_name, 
-                                tab + "template_name = '%s'\n\n\n" % template ] )
+                                argDict['tab'] + "template_name = '%s'\n\n\n" % template ] )
             else:
                 lines.extend( [ "def %s(request):\n" % view_name, 
-                                tab + "ctx = RequestContext(request)\n",
-                                tab + "return render_to_response('%s', ctx )\n" % template ] )
+                                argDict['tab'] + "ctx = RequestContext(request)\n",
+                                argDict['tab'] + "return render_to_response('%s', ctx )\n" % template ] )
             
         else:
             self.stdout.write( "EXISTING VIEWS: %s\n" % ", ".join(views) )
@@ -121,7 +130,7 @@ class Command(AppCommand):
                     '</head>',
                     '<body>',
                     '\t<h1>%(app)s - %(page)s, Stub Page</h1>' % argDict,
-                    '\t<a href="{% url ' + '%(app)s-%(page)s' % argDict + ' %}">link</a>',
+                    '\t<a href="{% url ' + '%(url_name)s' % argDict + ' %}">link</a>',
                     '</body>\n</html>']
 
             FILE.write( "\n".join(html) )
@@ -131,7 +140,15 @@ class Command(AppCommand):
         #################
         # UPDATE THE urls.py FILE
 
-        if os.path.isfile(url_file): 
+        argDict['page_link'] = "%(page)s/" % argDict
+
+        if argDict['page'] == "index":
+            argDict['page_link'] = "/"
+
+        if os.path.isfile(url_file):
+            '''
+            If there is a urls.py file do this
+            '''
             try:
                 FILE = open(url_file, "r")
                 data = FILE.read()
@@ -141,30 +158,35 @@ class Command(AppCommand):
             except IOError as e:
                 print( "IO Error reading %s, Step Skipped.\n\t%s" % (view_file, e) )
             
-            if view_import_path not in urls:
+            print urls
+            print argDict['view_import_path']
+
+            if argDict['view_import_path'] + "," not in urls:   # Make sure to add the comma, which is caught by the regex pattern
                 FILE = open(url_file, "a")
 
-                if argDict['page'] == "index":
-                    url_py = "urlpatterns += patterns('',\n\turl(r'^/$', '%s', name='%s'),\n)" % (view_import_path, url_name)
+                if use_class_based_views:
+                    url_py = "urlpatterns += patterns('',\n%(tab)surl(r'^%(page_link)s$', %(view_import_path)s, name='%(url_name)s'),\n)" % (argDict)
                 else:
-                    url_py = "urlpatterns += patterns('',\n\turl(r'^%s/$', '%s', name='%s'),\n)" % (argDict['page'], view_import_path, url_name)
+                    url_py = "urlpatterns += patterns('',\n%(tab)surl(r'^%(page_link)s$', '%(view_import_path)s', name='%(url_name)s'),\n)" % (argDict)
 
                 FILE.write( url_py + "\n" )
                 FILE.close()
-                
 
         else:
+            '''
+            If there is no urls.py file do this
+            '''
             FILE = open(url_file, "w")
 
             if version_check("gte", "1.5.0"):
-                url_py = ["from django.conf.urls import *\n", "urlpatterns = patterns(''," ]
+                url_py = ["from django.conf.urls import *", "from %(app)s import views\n" % argDict, "urlpatterns = patterns(''," ]
             else:
                 url_py = ["from django.conf.urls.defaults import *\n", "urlpatterns = patterns(''," ]
-            
-            if argDict['page'] == "index":
-                url_py.append( "\turl(r'^/$', '%s', name='%s'),\n)" % ( view_import_path, url_name ) )
+
+            if use_class_based_views:
+                url_py.append(   "%(tab)surl(r'^%(page_link)s$', %(view_import_path)s, name='%(url_name)s'),\n)" % ( argDict ) )
             else:
-                url_py.append( "\turl(r'^%s/$', '%s', name='%s'),\n)" % ( argDict['page'], view_import_path, url_name ) )
+                url_py.append(   "%(tab)surl(r'^%(page_link)s$', '%(view_import_path)s', name='%(url_name)s'),\n)" % ( argDict ) )
 
             FILE.write( "\n".join(url_py) + "\n" )
             FILE.close()
@@ -175,3 +197,5 @@ class Command(AppCommand):
         self.stdout.write( "\n" + "*" * count + "\n" )
         self.stdout.write( "%s\n" % lable )
         self.stdout.write( "*" * count + "\n" )
+
+
