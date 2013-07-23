@@ -105,7 +105,7 @@ class Command(StubRootCommand):
         if not os.path.exists(dev_settings_file):
             FILE = open(dev_settings_file, 'w')
             lines = self.loadTemplateLines( os.path.join(stubtools.__path__[0], "templates", "dev_py.txt") )
-            FILE.writelines("\n".join(lines))
+            FILE.writelines("".join(lines))
             FILE.close()
 
         # CREATE THE PRODUCTION SERVER FILE
@@ -113,7 +113,7 @@ class Command(StubRootCommand):
         if not os.path.exists(dev_settings_file):
             FILE = open(dev_settings_file, 'w')
             lines = self.loadTemplateLines( os.path.join(stubtools.__path__[0], "templates", "production_py.txt") )
-            FILE.writelines("\n".join(lines))
+            FILE.writelines("".join(lines))
             FILE.close()
 
     def loadTemplateLines(self, path):
@@ -211,7 +211,7 @@ class Command(StubRootCommand):
         if not os.path.exists(base_html_file):
             FILE = open(base_html_file, 'w')
             lines = self.loadTemplateLines( os.path.join(stubtools.__path__[0], "templates", "base_html.txt") )
-            FILE.writelines("\n".join(lines))
+            FILE.writelines("".join(lines))
             FILE.close()
 
 
