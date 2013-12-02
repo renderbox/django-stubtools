@@ -57,9 +57,12 @@ class Command(StubRootCommand):
         if result == "y":
             self.staticPathSetup()
 
-        result = self.checkInput("Do you want to create a Base html template file?")
-        if result == "y":
-            self.addBaseHtmlFile()
+        if len(settings.TEMPLATE_DIRS):
+            result = self.checkInput("Do you want to create a Base html template file?")
+            if result == "y":
+                self.addBaseHtmlFile()
+        else:
+            print "WARNING: In order to setup a base.html you need to have a template directory in the project config"
 
     def splitConfigSetup(self):
         '''
@@ -113,10 +116,10 @@ class Command(StubRootCommand):
             FILE.close()
 
     def loadTemplateLines(self, path):
-            SRC = open(path, 'r')
-            lines = SRC.readlines()
-            SRC.close()
-            return lines
+        SRC = open(path, 'r')
+        lines = SRC.readlines()
+        SRC.close()
+        return lines
 
     def templatePathSetup(self):
         print "\nCHECKING FOR TEMPLATE PATH"
