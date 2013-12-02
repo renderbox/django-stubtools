@@ -49,7 +49,7 @@ class Command(StubRootCommand):
         if result == "y":
             if not len(settings.STATICFILES_DIRS):
                 print "\tERROR: NO STATIC FILE DIRECOTRIES FOUND!\n\tAdd this to your config:\n"
-                print "STATICFILES_DIRS = (\n    os.path.join(BASE_PATH, 'static'),\n)\n"
+                print "STATICFILES_DIRS = (\n    os.path.join(BASE_DIR, 'static'),\n)\n"
                 return
 
             self.getTwitterBootstrap()
@@ -66,8 +66,8 @@ class Command(StubRootCommand):
         url = "http://twitter.github.io/bootstrap/assets/bootstrap.zip"
 
         # SETUP THE DESTINATION PATH
-        tmpdir = os.path.join(settings.BASE_PATH, "_tmp")
-        tmpfile = os.path.join(settings.BASE_PATH, "_tmp", url.split("/")[-1])
+        tmpdir = os.path.join(settings.BASE_DIR, "_tmp")
+        tmpfile = os.path.join(settings.BASE_DIR, "_tmp", url.split("/")[-1])
 
         # DOWNLOAD
         print "Downloading '%s' \n\tto '%s'" % (url, tmpfile)
