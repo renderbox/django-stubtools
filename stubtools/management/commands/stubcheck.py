@@ -16,7 +16,7 @@ class Command(AppCommand):
 
         checklist = []
 
-        checklist.append( self.path_check() )        # Check for the PROJECT_PATH in settings.py
+        checklist.append( self.path_check() )        # Check for the BASE_DIR in settings.py
 
         # SETTING UP THE SPLIT SETTINGS FILES
 
@@ -28,19 +28,19 @@ class Command(AppCommand):
 
     def path_check(self):
 
-        result = Check("PROJECT_PATH Check")
+        result = Check("BASE_DIR Check")
 
         try:
-            root_path = settings.PROJECT_PATH
+            root_path = settings.BASE_DIR
             result.success = True
         except:
             project_name = settings.ROOT_URLCONF.split(".")[0]
-            result.message.append( "You need to have either a PROJECT_PATH settings variable." )
+            result.message.append( "You need to have either a BASE_DIR settings variable." )
             result.message.append(  "Add the following to your settings.py:\n" )
             result.message.append(  "import os.path\n" )
-            result.message.append(  "PROJECT_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))" )
-            result.message.append(  "if '%s/%s' in PROJECT_PATH:" % (project_name, project_name) )
-            result.message.append(  "    PROJECT_PATH = PROJECT_PATH.replace('%s/%s', '%s')" % (project_name, project_name, project_name) )
+            result.message.append(  "BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))" )
+            result.message.append(  "if '%s/%s' in BASE_DIR:" % (project_name, project_name) )
+            result.message.append(  "    BASE_DIR = BASE_DIR.replace('%s/%s', '%s')" % (project_name, project_name, project_name) )
         
         return result
 

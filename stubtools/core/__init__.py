@@ -38,14 +38,11 @@ class StubRootCommand(AppCommand):
 
     def handle(self, *args, **options):
         try:
-            root_path = settings.PROJECT_PATH
+            root_path = settings.BASE_DIR
         except:
-            try:
-                root_path = settings.PROJECT_ROOT
-            except:
-                project_name = settings.ROOT_URLCONF.split(".")[0]
+            project_name = settings.ROOT_URLCONF.split(".")[0]
 
-                raise NoProjectPathException(project_name)
+            raise NoProjectPathException(project_name)
 
 
 def version_check(mode="gte", vcheck="0.0.0"):
