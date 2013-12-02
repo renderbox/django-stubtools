@@ -6,13 +6,14 @@ stubtools/exceptions.py
 stubtools/core/__init__.py
 stubtools/management/__init__.py
 stubtools/management/commands/__init__.py
-stubtools/management/commands/stubbp.py
+stubtools/management/commands/stubboot.py
+stubtools/management/commands/stubapp.py
 stubtools/management/commands/stubcheck.py
 stubtools/management/commands/stubform.py
 stubtools/management/commands/stubmodel.py
 stubtools/management/commands/stubout.py
 stubtools/management/commands/stubpage.py
-stubtools/management/commands/stubsetup.py
+stubtools/management/commands/stubproject.py
 stubtools/templates/__init__.py
 stubtools/templates/base_html.txt
 stubtools/templates/dev_py.txt

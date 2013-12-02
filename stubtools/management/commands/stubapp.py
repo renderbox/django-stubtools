@@ -16,21 +16,19 @@ class Command(AppCommand):
             raise CommandError('Need to pass App names')
 
         app_name = args[0]
+        
         try:
-            root_path = settings.PROJECT_PATH
+            root_path = settings.BASE_DIR
         except:
-            try:
-                root_path = settings.PROJECT_ROOT
-            except:
-                project_name = settings.ROOT_URLCONF.split(".")[0]
+            project_name = settings.ROOT_URLCONF.split(".")[0]
 
-                print "You need to have either a PROJECT_PATH or PROJECT_ROOT settings variable."
-                print "Add the following to your settings.py:\n"
-                print "import os.path\n"
-                print "PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))"
-                print "if '%s/%s' in PROJECT_ROOT:" % (project_name, project_name)
-                print "    PROJECT_ROOT = PROJECT_ROOT.replace('%s/%s', '%s')" % (project_name, project_name, project_name)
-                return
+            print "You need to have the BASE_DIR settings variable."
+            print "Add the following to your settings.py:\n"
+            print "import os.path\n"
+            print "BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))"
+            print "if '%s/%s' in BASE_DIR:" % (project_name, project_name)
+            print "    BASE_DIR = BASE_DIR.replace('%s/%s', '%s')" % (project_name, project_name, project_name)
+            return
 
         app_path = os.path.join(root_path, app_name)
         self.add_url(app_name, app_path)
