@@ -6,7 +6,7 @@ import django
 
 class Command(AppCommand):
     args = '<app page_name>'
-    help = 'creates a template and matching method for a given page name'
+    help = 'creates a template and matching view for a given page name'
 
     def handle(self, *args, **options):
         if len(args) < 1:
@@ -178,7 +178,7 @@ class Command(AppCommand):
             if version_check("gte", "1.5.0"):
                 url_py = ["from django.conf.urls import *", "from %(app)s import views\n" % argDict, "urlpatterns = patterns(''," ]
             else:
-                url_py = ["from django.conf.urls.defaults import *\n", "urlpatterns = patterns(''," ]
+                url_py = ["from django.conf.urls import *\n", "urlpatterns = patterns(''," ]
 
             if use_class_based_views:
                 url_py.append(   "%(tab)surl(r'^%(page_link)s$', %(view_import_path)s, name='%(url_name)s'),\n)" % ( argDict ) )
