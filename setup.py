@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(name='django-stubtools',
-      version='0.6.0',
+      version='0.6.1',
       author = "Grant Viklund",
       author_email = "gviklund@backcode.com",
       description = "A set of tools for Django to help 'stub-out' an app quickly.",
@@ -14,9 +14,9 @@ setup(name='django-stubtools',
           "Development Status :: 4 - Beta",
           "Framework :: Django",
           "Intended Audience :: Developers",
-          "License :: OSI Approved :: BSD License",
+          "License :: OSI Approved :: MIT License",
       ],
       install_requires=[
-          "Django >= 1.4.0",
+          "Django>=1.4.0",
       ],
 )
