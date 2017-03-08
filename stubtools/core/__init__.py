@@ -22,7 +22,6 @@ def import_line_check(regex, text, module):
     if imprt:
         for line in imprt:
             check = [ x.strip() for x in line.split(",") ]
-            #print check
             if module in check:
                 return True
 
@@ -51,7 +50,7 @@ def version_check(mode="gte", vcheck="0.0.0"):
     version number that looks like this: 1.0.0
 
     5 modes:
-        gt -> Greater Than 
+        gt -> Greater Than
         gte -> Greater Than or Equal
         lt ->  Less Than
         lte -> Less Than or Equal

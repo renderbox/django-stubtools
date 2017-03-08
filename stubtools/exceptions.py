@@ -3,8 +3,8 @@
 class NoProjectPathException(Exception):
     def __init__(self, message):
 
-    	project_name = message
-    	result = []
+        project_name = message
+        result = []
 
         result.append( "You need to have a BASE_DIR settings variable." )
         result.append( "Add the following to your settings.py:\n" )

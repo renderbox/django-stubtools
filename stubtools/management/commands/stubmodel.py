@@ -1,3 +1,11 @@
+#--------------------------------------------
+# Copyright 2017, Grant Viklund
+# @Author: Grant Viklund
+# @Date:   2017-02-20 13:50:51
+# @Last Modified by:   Grant Viklund
+# @Last Modified time: 2017-03-08 12:33:45
+#--------------------------------------------
+
 from django.core.management.base import AppCommand, CommandError
 import re, os.path
 from stubtools.core import underscore_camel_case, import_line_check, class_name
@@ -11,24 +19,24 @@ class Command(AppCommand):
     imports_regex = re.compile(r"(import|from)")
     class_regex = re.compile(r"class (\w+)\(.+\):")
     func_regex = re.compile(r"(def|class)")
-    
+
 
     def handle(self, *args, **options):
-        
+
         if not args:
-            print "No Arguments Passed"
+            print("No Arguments Passed")
             return
-        
+
         for entry in args:
             app, model = entry.split(".")
             print("CHECKING FOR MODEL: %s" % model)
             self.process(app, model)
-        
-        
+
+
     def process(self, app, model, *args, **kwargs):
         model_file = "%s/models.py" % app
         print("MODEL FILE: %s" % model_file)
-        
+
         import_entry = False
         first_class_line = 0
         last_import_line = 0
@@ -36,9 +44,9 @@ class Command(AppCommand):
 
         # MAKE SURE THE MODEL NAME'S FIRST LETTER IS CAPITALIZED
         model = class_name(model)
-        
+
         # LOAD FILE
-        if os.path.isfile( model_file ): 
+        if os.path.isfile( model_file ):
             try:
                 FILE = open( model_file, "r")
                 data = FILE.read()
@@ -53,7 +61,7 @@ class Command(AppCommand):
                 FILE.close()
 
             except IOError as e:
-                print "IO ERROR, CONTINUE"
+                print("IO ERROR, CONTINUE")
                 pass                    # May need to add something here
                                         # to handle a file locking issue
         else:
@@ -66,32 +74,32 @@ class Command(AppCommand):
             return
 
         print('Creating Model: %s' % model)
-        
+
         if not import_entry:
             # FIND WHERE TO ADD THE IMPORT LINES
-            
+
             lines = []
             for m in re.finditer( self.func_regex, data ):
                 lines.append( data.count("\n",0,m.start())+1 )
-        
+
             if lines:
                 lines.sort()
                 first_class_line = lines[0]
-        
-            print "[%d]" % ( first_class_line )
+
+            print("[%d]" % ( first_class_line ) )
 
             lines = []
             for m in re.finditer( self.imports_regex, data ):
                 lineno = data.count("\n",0,m.start())+1
                 if lineno < first_class_line:
                     lines.append(lineno)
-                #print "[%d] %s" % (lineno, data[ m.start() : m.end() ] )
+                #print("[%d] %s" % (lineno, data[ m.start() : m.end() ] ) )
             if lines:
                 lines.sort()
                 last_import_line = lines[-1]
-        
-            print "[%d]" % ( last_import_line )
-        
+
+            print( "[%d]" % ( last_import_line ) )
+
         # ADD THE MODEL TO THE LINES
         new_lines.append('\n\nclass %s(models.Model):\n    name = models.CharField(_("Name"), max_length=300)' % model)
         new_lines.append(" ")

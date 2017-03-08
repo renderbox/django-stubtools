@@ -1,3 +1,11 @@
+#--------------------------------------------
+# Copyright 2017, Grant Viklund
+# @Author: Grant Viklund
+# @Date:   2017-02-20 13:50:51
+# @Last Modified by:   Grant Viklund
+# @Last Modified time: 2017-03-08 12:29:34
+#--------------------------------------------
+
 from django.core.management.base import AppCommand, CommandError
 from stubtools.core import class_name, version_check
 import re, os.path
@@ -11,16 +19,16 @@ class Command(AppCommand):
     def handle(self, *args, **options):
         if len(args) < 1:
             raise CommandError('Need to pass App.Page names')
-            
+
         parts = args[0].split(".")
 
         # Using a Dictionary for clarity in strin replacements
         argDict = {'app':parts[0], 'page':parts[1].lower()}
         tab = "\t"
         argDict['tab'] = " " * 4
-        
+
         use_class_based_views = version_check("gte", "1.3.0")        # SHOULD DEFAULT FOR 1.3+ TO True.  NEED ATTR IN settings.py TO CONFIG SET TO FALSE.
-        
+
         #from django.views.generic import TemplateView
         view_file = "%(app)s/views.py" % argDict
         argDict['view_file'] = view_file
@@ -31,9 +39,9 @@ class Command(AppCommand):
             url_entry_regex = re.compile("url\(\S+ (\S+)" )
         else:
             url_entry_regex = re.compile("url\(\S+ '(\S+)'" )
-        
+
         # Get contents of views.py file
-        if os.path.isfile(view_file): 
+        if os.path.isfile(view_file):
             try:
                 FILE = open(view_file, "r")
                 data = FILE.read()
@@ -41,42 +49,42 @@ class Command(AppCommand):
             except IOError as e:
                 print( "IO Error reading %s\n\t%s" % (view_file, tab, e) )
                 return
-        
+
         insert_line = None
         replace_line = None
-        
+
         if use_class_based_views:
             views = [ x.name for x in ast.parse(data).body if isinstance(x, ast.ClassDef) ]   # BEST PYTHON WAY TO DO THIS
             view_name = ( "%sView" % ( class_name( argDict['page'] ) ) )
             view_import_path = "views.%s.as_view()" % (view_name)
             argDict['view_import_path'] = view_import_path
-            
+
             # CHECK IMPORT LINES
             importers = { v.module : v for v in ast.parse(data).body if isinstance(v, ast.ImportFrom) }
-            
+
             if not importers:
                 insert_line = (0, "from django.views.generic import TemplateView\n\n")
             else:
                 if "django.views.generic" in importers:
                     name_list = [ x.name for x in importers["django.views.generic"].names ]
-                    
+
                     if "TemplateView" not in name_list:
                         print("Adde Module into line: %d -> %s" % (importers["django.views.generic"].lineno, "TemplateView" ) )     # NEED AUTOMATIC WAY TO INSERT THIS
                 else:
                     # GET THE LAST IMPORT LINE
                     import_number = 0
                     insert_line = (import_number, "from django.views.generic import TemplateView\n")
-            
+
         else:
             views = [ x.name for x in ast.parse(data).body if isinstance(x, ast.FunctionDef) ]   # BEST PYTHON WAY TO DO THIS
             view_name = ("%(page)s_view" % argDict)
             view_import_path = "%(app)s.views.%(page)s_view" % argDict
             argDict['view_import_path'] = view_import_path
-            
+
         url_name = "%(app)s-%(page)s" % argDict
         argDict['url_name'] = url_name
         template = "%(app)s/%(page)s.html" % argDict
-        
+
         FILE = open(view_file, "r")
         lines = FILE.readlines()
         FILE.close()
@@ -86,7 +94,7 @@ class Command(AppCommand):
         if insert_line:
             lines.insert( insert_line[0], insert_line[1] )
             dirty = True
-        
+
         # If the new page name is not in the views.py, add the stub
         if view_name not in views:
             self.stdout.write( "ADDING: %s to %s\n" % (argDict['page'], view_file) )
@@ -95,13 +103,13 @@ class Command(AppCommand):
             if use_class_based_views:
                 # CHECK FOR IMPORT LINE IN FILE
 
-                lines.extend( [ "class %s(TemplateView):\n" % view_name, 
+                lines.extend( [ "class %s(TemplateView):\n" % view_name,
                                 argDict['tab'] + "template_name = '%s'\n\n\n" % template ] )
             else:
-                lines.extend( [ "def %s(request):\n" % view_name, 
+                lines.extend( [ "def %s(request):\n" % view_name,
                                 argDict['tab'] + "ctx = RequestContext(request)\n",
                                 argDict['tab'] + "return render_to_response('%s', ctx )\n" % template ] )
-            
+
         else:
             self.stdout.write( "EXISTING VIEWS: %s\n" % ", ".join(views) )
 
@@ -112,10 +120,10 @@ class Command(AppCommand):
 
         # Create the template stub
         template_file = "templates/%s" % template
-        
+
         # Need to check for directory and add it if it is missing from the template directory
-        if not os.path.isfile(template_file): 
-            
+        if not os.path.isfile(template_file):
+
             dest_path = "templates/%(app)s" % argDict
             if not os.path.exists(dest_path):
                 os.makedirs(dest_path)
@@ -157,7 +165,7 @@ class Command(AppCommand):
 
             except IOError as e:
                 print( "IO Error reading %s, Step Skipped.\n\t%s" % (view_file, e) )
-            
+
             if argDict['view_import_path'] + "," not in urls:   # Make sure to add the comma, which is caught by the regex pattern
                 FILE = open(url_file, "a")
 
