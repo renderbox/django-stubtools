@@ -15,8 +15,9 @@ setup(name='django-stubtools',
           "Framework :: Django",
           "Intended Audience :: Developers",
           "License :: OSI Approved :: MIT License",
+          "Programming Language :: Python :: 3"
       ],
       install_requires=[
-          "Django>=1.4.0",
+          "Django>=1.9.0",
       ],
 )
