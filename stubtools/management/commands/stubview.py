@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2017-03-08 12:29:34
+# @Last Modified time: 2017-04-06 12:53:17
 #--------------------------------------------
 
 from django.core.management.base import AppCommand, CommandError
@@ -22,14 +22,25 @@ class Command(AppCommand):
 
         parts = args[0].split(".")
 
+        if not parts[1][0].isupper():    # Make sure the first letter is uppercase
+            parts[1] = parts[1][0].upper() + parts[1][1:]
+
+        name_split_regex = re.compile("([A-Z][a-z]+)")    # Splits the CammelCase naming
+        name_parts = name_split_regex.findall(parts[1])
+
+        if name_parts[-1] == "View":
+            page_class = parts[1]
+            name_parts.pop(-1)
+        else:
+            page_class = parts[1]+"View"
+
         # Using a Dictionary for clarity in strin replacements
-        argDict = {'app':parts[0], 'page':parts[1].lower()}
+        argDict = {'app':parts[0], 'page':"_".join(name_parts).lower(), 'pageClass':page_class, 'pageName':' '.join(name_parts) }
         tab = "\t"
         argDict['tab'] = " " * 4
 
         use_class_based_views = version_check("gte", "1.3.0")        # SHOULD DEFAULT FOR 1.3+ TO True.  NEED ATTR IN settings.py TO CONFIG SET TO FALSE.
 
-        #from django.views.generic import TemplateView
         view_file = "%(app)s/views.py" % argDict
         argDict['view_file'] = view_file
 
@@ -55,7 +66,7 @@ class Command(AppCommand):
 
         if use_class_based_views:
             views = [ x.name for x in ast.parse(data).body if isinstance(x, ast.ClassDef) ]   # BEST PYTHON WAY TO DO THIS
-            view_name = ( "%sView" % ( class_name( argDict['page'] ) ) )
+            view_name = argDict['pageClass']
             view_import_path = "views.%s.as_view()" % (view_name)
             argDict['view_import_path'] = view_import_path
 
@@ -103,7 +114,9 @@ class Command(AppCommand):
             if use_class_based_views:
                 # CHECK FOR IMPORT LINE IN FILE
 
-                lines.extend( [ "class %s(TemplateView):\n" % view_name,
+                lines.extend( [ "##-" + "-" * len(argDict["pageName"]) + "\n",
+                                "## %(pageName)s\n\n" % argDict,
+                                "class %s(TemplateView):\n" % view_name,
                                 argDict['tab'] + "template_name = '%s'\n\n\n" % template ] )
             else:
                 lines.extend( [ "def %s(request):\n" % view_name,
@@ -130,16 +143,16 @@ class Command(AppCommand):
 
             self.stdout.write( "ADDING TEMPLATE FILE: %s\n" % template_file )
             FILE = open( template_file, "w" )
-            html = ['<!DOCTYPE html>',
-                    '<html>',
-                    '<head>',
-                    '<meta charset="utf-8">',
-                    '\t<title>%(app)s - %(page)s</title>' % argDict,
-                    '</head>',
-                    '<body>',
-                    '\t<h1>%(app)s - %(page)s, Stub Page</h1>' % argDict,
-                    '\t<a href="{% url ' + "'%(url_name)s'" % argDict + ' %}">link</a>',
-                    '</body>\n</html>']
+            html = ['{% extends "base.html" %}\n',
+                    '{% block head_title %}' + ' - %(pageName)s'  % argDict + '{% endblock %}\n',
+                    '{% block content %}',
+                    '\t\t<div class="row">',
+                    '\t\t\t<div class="col-md-12">',
+                    '\t\t\t\t<h2>%(app)s - %(pageName)s, Stub Page</h2>' % argDict,
+                    '\t\t\t\t<a href="{% url ' + "'%(url_name)s'" % argDict + ' %}">link</a>',
+                    '\t\t\t</div>',
+                    '\t\t</div>',
+                    '{% endblock content %}']
 
             FILE.write( "\n".join(html) )
 
@@ -151,7 +164,7 @@ class Command(AppCommand):
         argDict['page_link'] = "%(page)s/" % argDict
 
         if argDict['page'] == "index":
-            argDict['page_link'] = "/"
+            argDict['page_link'] = ""
 
         if os.path.isfile(url_file):
             '''
@@ -169,8 +182,13 @@ class Command(AppCommand):
             if argDict['view_import_path'] + "," not in urls:   # Make sure to add the comma, which is caught by the regex pattern
                 FILE = open(url_file, "a")
 
+                # TODO: REBUILD THE WHOLE FILE WITH THE URLs INSERTED INTO THE LIST RATHER THAN APPEND
+
                 if use_class_based_views:
-                    url_py = "urlpatterns += patterns('',\n%(tab)surl(r'^%(page_link)s$', %(view_import_path)s, name='%(url_name)s'),\n)" % (argDict)
+                    if version_check("gte", "1.10.0"):
+                        url_py = "urlpatterns += [\n%(tab)surl(r'^%(page_link)s$', %(view_import_path)s, name='%(url_name)s')\n]" % (argDict)
+                    else:
+                        url_py = "urlpatterns += patterns('',\n%(tab)surl(r'^%(page_link)s$', %(view_import_path)s, name='%(url_name)s'),\n)" % (argDict)
                 else:
                     url_py = "urlpatterns += patterns('',\n%(tab)surl(r'^%(page_link)s$', '%(view_import_path)s', name='%(url_name)s'),\n)" % (argDict)
 
@@ -183,15 +201,22 @@ class Command(AppCommand):
             '''
             FILE = open(url_file, "w")
 
-            if version_check("gte", "1.5.0"):
+            if version_check("gte", "1.10.0"):
+                url_py = ["from django.conf.urls import url", "from . import views\n" % argDict, "urlpatterns = [" ]
+                post_append = "]"
+            elif version_check("gte", "1.5.0"):
                 url_py = ["from django.conf.urls import *", "from %(app)s import views\n" % argDict, "urlpatterns = patterns(''," ]
+                post_append = ")"
             else:
                 url_py = ["from django.conf.urls import *\n", "urlpatterns = patterns(''," ]
+                post_append = ")"
 
             if use_class_based_views:
                 url_py.append(   "%(tab)surl(r'^%(page_link)s$', %(view_import_path)s, name='%(url_name)s'),\n)" % ( argDict ) )
             else:
                 url_py.append(   "%(tab)surl(r'^%(page_link)s$', '%(view_import_path)s', name='%(url_name)s'),\n)" % ( argDict ) )
+
+            url_py.append(post_append)
 
             FILE.write( "\n".join(url_py) + "\n" )
             FILE.close()
