@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-10-10 11:49:42
+# @Last Modified time: 2018-10-10 13:48:36
 #--------------------------------------------
 
 import re, os.path
@@ -92,6 +92,7 @@ class Command(AppCommand):
         print('Creating Model: %s' % model)
 
         env = Environment( loader=PackageLoader('stubtools', 'templates/commands/stubmodel'), autoescape=select_autoescape(['html']) )
+        template = env.get_template('model.j2')
 
         if not import_entry:
             # FIND WHERE TO ADD THE IMPORT LINES
@@ -104,7 +105,7 @@ class Command(AppCommand):
                 lines.sort()
                 first_class_line = lines[0]
 
-            print("[%d]" % ( first_class_line ) )
+            # print("[%d]" % ( first_class_line ) )
 
             lines = []
             for m in re.finditer( self.imports_regex, data ):
@@ -116,7 +117,7 @@ class Command(AppCommand):
                 lines.sort()
                 last_import_line = lines[-1]
 
-            print( "[%d]" % ( last_import_line ) )
+            # print( "[%d]" % ( last_import_line ) )
 
         # ADD THE MODEL TO THE LINES
         new_lines.append( template.render(model_name=model, fields=[{'field_name':"name", 'field_type':"CharField", 'field_kwargs':{'max_length':300}}]) )
