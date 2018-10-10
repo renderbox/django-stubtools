@@ -1,14 +1,30 @@
 #--------------------------------------------
-# Copyright 2017, Grant Viklund
+# Copyright 2013-2018, Grant Viklund
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2017-03-08 12:33:45
+# @Last Modified time: 2018-10-10 11:49:42
 #--------------------------------------------
 
-from django.core.management.base import AppCommand, CommandError
 import re, os.path
+import inspect
+
+from jinja2 import Environment, PackageLoader, select_autoescape
+
+from django.core.management.base import AppCommand, CommandError
+from django.db import models
+
 from stubtools.core import underscore_camel_case, import_line_check, class_name
+
+# Fields that are not really meant to be included in the list of useable Model Fields
+EXCLUDED_FIELDS = ['BLANK_CHOICE_DASH', 'Empty', 'Field', 'FieldDoesNotExist', 'NOT_PROVIDED']
+
+
+def get_model_fields():
+    # dict([(name, cls) for name, cls in models.__dict__.items() if isinstance(cls, models.Field.__class__)])
+    result = [f for f in dict(inspect.getmembers(models))['fields_all'] if f not in EXCLUDED_FIELDS]
+    result.sort()
+    return result
 
 
 class Command(AppCommand):
@@ -75,6 +91,8 @@ class Command(AppCommand):
 
         print('Creating Model: %s' % model)
 
+        env = Environment( loader=PackageLoader('stubtools', 'templates/commands/stubmodel'), autoescape=select_autoescape(['html']) )
+
         if not import_entry:
             # FIND WHERE TO ADD THE IMPORT LINES
 
@@ -101,8 +119,11 @@ class Command(AppCommand):
             print( "[%d]" % ( last_import_line ) )
 
         # ADD THE MODEL TO THE LINES
-        new_lines.append('\n\nclass %s(models.Model):\n    name = models.CharField(_("Name"), max_length=300)' % model)
-        new_lines.append(" ")
+        new_lines.append( template.render(model_name=model, fields=[{'field_name':"name", 'field_type':"CharField", 'field_kwargs':{'max_length':300}}]) )
+        # new_lines.append('\n\nclass %s(models.Model):\n    name = models.CharField(_("Name"), max_length=300)' % model)
+        # new_lines.append(" ")
+
+        # model_fields = get_model_fields()
 
         mf = open( model_file, "a" )
         # NEEDS TO LOAD AND REWRITE THE FILE RATHER THAN JUST APPEND
