@@ -30,8 +30,8 @@ data = {
     'author_email': 'renderbox@gmail.com',
     'maintainer': 'Grant Viklund',
     'maintainer_email': 'renderbox@gmail.com',
-    'packages': ['stubtools', 'stubtools.core', 'stubtools.management', 'stubtools.management.commands', 'stubtools.tests', 'stubtools.templates'],
-    'package_data': {'stubtools.templates': ['*.j2', '*.txt']},
+    'packages': ['stubtools', 'stubtools.core', 'stubtools.management', 'stubtools.management.commands', 'stubtools.tests'],
+    'package_data': {'stubtools': ['templates/*.j2', 'templates/*.txt']},
     'python_requires': '>=2.7.0',
     'install_requires': ["Django>=2.0.0", "Jinja2==2.10"],
     'extras_require': {

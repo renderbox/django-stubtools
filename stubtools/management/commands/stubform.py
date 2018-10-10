@@ -1,9 +1,9 @@
 #--------------------------------------------
-# Copyright 2017, Grant Viklund
+# Copyright 2013-2018, Grant Viklund
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2017-03-08 12:33:03
+# @Last Modified time: 2018-10-08 16:30:32
 #--------------------------------------------
 
 from django.core.management.base import AppCommand, CommandError
