@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-10-10 12:26:17
+# @Last Modified time: 2018-10-10 13:29:17
 #--------------------------------------------
 
 from django.core.management.base import AppCommand, CommandError
@@ -136,6 +136,7 @@ class Command(AppCommand):
             FILE.close()
 
         # Create the template stub
+        # todo: check to see if the template should be written in the project root or app directory
         template_file = "templates/%s" % template
 
         # Need to check for directory and add it if it is missing from the template directory
@@ -145,22 +146,9 @@ class Command(AppCommand):
             if not os.path.exists(dest_path):
                 os.makedirs(dest_path)
 
-            self.stdout.write( "ADDING TEMPLATE FILE: %s\n" % template_file )
+            self.stdout.write( "ADDING HTML TEMPLATE FILE: %s\n" % template_file )
             FILE = open( template_file, "w" )
             template = env.get_template('page.html.j2')
-            # html = template.render(**context)
-            # html = template.render(page_name=context['page_name'], url=context['url_name'])
-
-            # html = ['{% extends "base.html" %}\n',
-            #         '{% block head_title %}' + ' - %(page_name)s'  % context + '{% endblock %}\n',
-            #         '{% block content %}',
-            #         '\t\t<div class="row">',
-            #         '\t\t\t<div class="col-md-12">',
-            #         '\t\t\t\t<h2>%(app)s - %(page_name)s, Stub Page</h2>' % context,
-            #         '\t\t\t\t<a href="{% url ' + "'%(url_name)s'" % context + ' %}">link</a>',
-            #         '\t\t\t</div>',
-            #         '\t\t</div>',
-            #         '{% endblock content %}']
             FILE.write( template.render(**context) )
             FILE.close()
 
