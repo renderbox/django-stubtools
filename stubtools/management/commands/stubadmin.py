@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-10-30 17:51:34
+# @Last Modified time: 2018-10-30 18:32:15
 #--------------------------------------------
 
 import os.path
@@ -16,6 +16,9 @@ from django.core.management.base import AppCommand, CommandError
 # from django.db import models
 
 # from stubtools.core import underscore_camel_case, import_line_check, class_name
+
+from stubtools.core.search import get_first_index, get_last_index, get_first_and_last_index
+
 
 class Command(AppCommand):
     args = '<app.model_name>'
@@ -124,12 +127,13 @@ class Command(AppCommand):
         footer_start = line_count
 
         # See if the Admin module is loaded
-        for c, line in enumerate(data_lines):
-            check = self.import_line_regex.findall( line )
+        admin_import_line = get_first_index(data_lines, self.import_line_regex)
+        # for c, line in enumerate(data_lines):
+        #     check = self.import_line_regex.findall( line )
 
-            if check:
-                admin_import_line = c       # Make note of the line number
-                break
+        #     if check:
+        #         admin_import_line = c       # Make note of the line number
+        #         break
 
         # Model Import Line
         for c, line in enumerate(data_lines):
@@ -146,28 +150,30 @@ class Command(AppCommand):
         # print("model_import_line Index: %d" % model_import_line)
 
         # Admin Registration
-        for c, line in enumerate(data_lines[model_import_line:]):
-            check = self.admin_site_register_regex.findall( line )
+        admin_registry_start, admin_registry_end = get_first_and_last_index(data_lines, self.admin_site_register_regex)
+        # for c, line in enumerate(data_lines[model_import_line:]):
+        #     check = self.admin_site_register_regex.findall( line )
 
-            if check:
-                if admin_registry_start == admin_registry_end:
-                    admin_registry_start = c + model_import_line
+        #     if check:
+        #         if admin_registry_start == admin_registry_end:
+        #             admin_registry_start = c + model_import_line
 
-                admin_registry_end = c + model_import_line       # Make note of the line number
-                # print("\tAdmin Registration found on line: %d" % (admin_registry_end + 1))
-                break
+        #         admin_registry_end = c + model_import_line       # Make note of the line number
+        #         # print("\tAdmin Registration found on line: %d" % (admin_registry_end + 1))
+        #         break
 
         # print("admin_registry_start Index: %d" % admin_registry_start)
         # print("admin_registry_end Index: %d" % admin_registry_end)
 
         # Model Admin
         # Find the registries first to reduce the search range for the Model Admins
-        for c, line in enumerate(data_lines[model_import_line:admin_registry_start]):
-            check = self.func_regex.findall( line )
+        model_admin_class_end = get_last_index(data_lines, self.func_regex)
+        # for c, line in enumerate(data_lines[model_import_line:admin_registry_start]):
+        #     check = self.func_regex.findall( line )
 
-            if check:
-                model_admin_class_end = c + model_import_line      # Make note of the line number
-                # print("\tModel Admin found on line: %d" % (model_admin_class_end + 1))
+        #     if check:
+        #         model_admin_class_end = c + model_import_line      # Make note of the line number
+        #         # print("\tModel Admin found on line: %d" % (model_admin_class_end + 1))
 
         # Take the last model admin line and find the break between it and the registry line
         for c, line in enumerate(data_lines[model_admin_class_end:admin_registry_start]):
@@ -200,7 +206,7 @@ class Command(AppCommand):
         env = Environment( loader=PackageLoader('stubtools', 'templates/commands/stubadmin'), autoescape=select_autoescape(['html']) )
         template = env.get_template('admin.j2')
 
-        # Temporary until file editing is added in
+        # Print out the results to the terminal, add as an option?
         # print("Add the following to your code if they are not already there:\n")
         # print('Creating Admin Interface: %s' % model_admin)
         result = template.render(**render_ctx)
