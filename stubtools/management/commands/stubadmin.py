@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-10-30 16:44:12
+# @Last Modified time: 2018-10-30 17:20:36
 #--------------------------------------------
 
 import os.path
@@ -118,7 +118,8 @@ class Command(AppCommand):
         # Set the insert lines to be the length of the doc.  This way if things are missing, they will just be appended to the end of the file.
         admin_import_line = line_count
         model_import_line = line_count
-        admin_class_end = line_count
+        model_admin_class_end = line_count
+        admin_registry_start = line_count
         admin_registry_end = line_count
         footer_start = line_count
 
@@ -142,29 +143,41 @@ class Command(AppCommand):
         render_ctx['models'] = list(set(render_ctx['models']))  # Remove any duplicates
         render_ctx['models'].sort()
 
-        print("Model Import Line: %d" % model_import_line)
-
-        # Model Admin
-        for c, line in enumerate(data_lines[model_import_line:]):
-            check = self.func_regex.findall( line )
-
-            if check:
-                admin_class_end = c       # Make note of the line number
-                print("Model Admin found on line: %d" % c)
-                break
-
-        print("Model Admin End Line: %d" % admin_class_end)
+        print("model_import_line Index: %d" % model_import_line)
 
         # Admin Registration
         for c, line in enumerate(data_lines[model_import_line:]):
             check = self.admin_site_register_regex.findall( line )
 
             if check:
-                admin_registry_end = c       # Make note of the line number
-                print("Admin Registration found on line: %d" % c)
+                if admin_registry_start == admin_registry_end:
+                    admin_registry_start = c + model_import_line
+
+                admin_registry_end = c + model_import_line       # Make note of the line number
+                print("\tAdmin Registration found on line: %d" % (admin_registry_end + 1))
                 break
 
-        print("Admin Class End Line: %d" % admin_registry_end)
+        print("admin_registry_start Index: %d" % admin_registry_start)
+        print("admin_registry_end Index: %d" % admin_registry_end)
+
+        # Model Admin
+        # Find the registries first to reduce the search range for the Model Admins
+        for c, line in enumerate(data_lines[model_import_line:admin_registry_start]):
+            check = self.func_regex.findall( line )
+
+            if check:
+                model_admin_class_end = c + model_import_line      # Make note of the line number
+                print("\tModel Admin found on line: %d" % (model_admin_class_end + 1))
+
+        # Take the last model admin line and find the break between it and the registry line
+        for c, line in enumerate(data_lines[model_admin_class_end:admin_registry_start]):
+            if line:
+                model_admin_class_end = c + model_admin_class_end
+                print("\tModel Admin Class found on line: %d" % (model_admin_class_end + 1))
+            else:
+                break
+
+        print("model_admin_class_end Index: %d" % model_admin_class_end)
 
         # Update Render Context
         # if not model in models:
@@ -175,11 +188,20 @@ class Command(AppCommand):
         # render_ctx['models'] = models
 
 
-        if model_import_line > 0:
+        if 0 < model_import_line:
             render_ctx['pre_import'] = "\n".join(data_lines[0:model_import_line] )    # Everything up until the model import line
 
-        # if model_import_line >= admin_class_end:
+        if model_import_line < model_admin_class_end:
+            render_ctx['pre_admin'] = "\n".join(data_lines[(model_import_line + 1):(model_admin_class_end + 1)] )    # Everything up until the model import line
 
+
+
+        # pre_registration
+
+
+        # FOOTER
+        if admin_registry_end < line_count:
+            render_ctx['post_registration'] = "\n".join(data_lines[admin_registry_end:line_count] )    # Everything up until the model import line
 
         print(render_ctx)
 
