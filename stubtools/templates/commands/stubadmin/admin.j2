@@ -1,11 +1,27 @@
-{{ pre_import }}{% if not admin_import %}from django.contrib import admin
-{% endif %}
+{{ pre_import }}{% if not admin_import %}from django.contrib import admin{% endif %}
 from .models import {% for model in models %}{{ model }}{{ ", " if not loop.last }}{% endfor %}
 {{ pre_admin }}
+{% if not pre_admin %}
+###############
+# ACTIONS
+###############
 
+
+###############
+# INLINES
+###############
+
+
+###############
+# MODEL ADMINS
+###############{% endif %}
 
 class {{ model_admin }}(admin.ModelAdmin):
     pass
+{% if not pre_registration %}
+###############
+# REGISTRATION
+###############{% endif %}
 {{ pre_registration }}
 admin.site.register({{ model }}, {{ model_admin }})
 {{ post_registration }}

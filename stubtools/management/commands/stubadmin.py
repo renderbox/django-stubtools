@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-10-30 17:30:28
+# @Last Modified time: 2018-10-30 17:51:34
 #--------------------------------------------
 
 import os.path
@@ -108,7 +108,7 @@ class Command(AppCommand):
         data_lines = data.split("\n")
         line_count = len(data_lines)
 
-        print("Line Count: %d" % line_count)
+        # print("Line Count: %d" % line_count)
 
         # Find the parts of the file to slice
 
@@ -143,7 +143,7 @@ class Command(AppCommand):
         render_ctx['models'] = list(set(render_ctx['models']))  # Remove any duplicates
         render_ctx['models'].sort()
 
-        print("model_import_line Index: %d" % model_import_line)
+        # print("model_import_line Index: %d" % model_import_line)
 
         # Admin Registration
         for c, line in enumerate(data_lines[model_import_line:]):
@@ -154,11 +154,11 @@ class Command(AppCommand):
                     admin_registry_start = c + model_import_line
 
                 admin_registry_end = c + model_import_line       # Make note of the line number
-                print("\tAdmin Registration found on line: %d" % (admin_registry_end + 1))
+                # print("\tAdmin Registration found on line: %d" % (admin_registry_end + 1))
                 break
 
-        print("admin_registry_start Index: %d" % admin_registry_start)
-        print("admin_registry_end Index: %d" % admin_registry_end)
+        # print("admin_registry_start Index: %d" % admin_registry_start)
+        # print("admin_registry_end Index: %d" % admin_registry_end)
 
         # Model Admin
         # Find the registries first to reduce the search range for the Model Admins
@@ -167,17 +167,17 @@ class Command(AppCommand):
 
             if check:
                 model_admin_class_end = c + model_import_line      # Make note of the line number
-                print("\tModel Admin found on line: %d" % (model_admin_class_end + 1))
+                # print("\tModel Admin found on line: %d" % (model_admin_class_end + 1))
 
         # Take the last model admin line and find the break between it and the registry line
         for c, line in enumerate(data_lines[model_admin_class_end:admin_registry_start]):
             if line:
                 model_admin_class_end = c + model_admin_class_end
-                print("\tModel Admin Class found on line: %d" % (model_admin_class_end + 1))
+                # print("\tModel Admin Class found on line: %d" % (model_admin_class_end + 1))
             else:
                 break
 
-        print("model_admin_class_end Index: %d" % model_admin_class_end)
+        # print("model_admin_class_end Index: %d" % model_admin_class_end)
 
 
         # Slice the existing admin.py into parts
@@ -201,11 +201,11 @@ class Command(AppCommand):
         template = env.get_template('admin.j2')
 
         # Temporary until file editing is added in
-        print("Add the following to your code if they are not already there:\n")
+        # print("Add the following to your code if they are not already there:\n")
         # print('Creating Admin Interface: %s' % model_admin)
         result = template.render(**render_ctx)
-        print( result )
+        # print( result )
 
-        # mf = open( admin_file, "a" )
-        # mf.write("\n\nclass %s(forms.ModelForm):\n\n    class Meta:\n        model = %s" % (model_admin, model) )
-        # mf.close()
+        mf = open( admin_file, "w" )
+        mf.write(result)
+        mf.close()
