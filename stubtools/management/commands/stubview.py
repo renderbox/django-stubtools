@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-10-10 13:29:17
+# @Last Modified time: 2018-10-30 18:11:31
 #--------------------------------------------
 
 from django.core.management.base import AppCommand, CommandError
@@ -15,7 +15,7 @@ import django
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 class Command(AppCommand):
-    args = '<app page_name>'
+    args = '<app.page_name>'
     help = 'creates a template and matching view for a given page name'
 
     def handle(self, *args, **options):
