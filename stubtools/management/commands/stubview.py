@@ -3,26 +3,63 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-10-30 18:11:31
+# @Last Modified time: 2018-10-31 15:34:40
 #--------------------------------------------
 
-from django.core.management.base import AppCommand, CommandError
-from stubtools.core import class_name, version_check
 import re, os.path
 import ast
 import django
 
+from django.core.management.base import AppCommand, CommandError
+from django.views.generic.base import View
+
 from jinja2 import Environment, PackageLoader, select_autoescape
 
+from stubtools.core import class_name, version_check, get_all_subclasses
+from stubtools.core.interaction import selection_list
+
+
+VIEW_CLASS_SETTINGS = {'TemplateView':{'import':""}, 'ListView':{}, 'DetailView':{}, 'RedirectView':{}}
+IGNORE_MODULES = ["django.views.i18n", "django.contrib.admin.views"]
+
 class Command(AppCommand):
-    args = '<app.page_name>'
-    help = 'creates a template and matching view for a given page name'
+    args = '<app.view_name>'
+    help = 'creates a template and matching view for the given view name'
 
-    def handle(self, *args, **options):
+
+    def handle(self, *args, **kwargs):
         if len(args) < 1:
-            raise CommandError('Need to pass App.Page names')
+            raise CommandError('Need to pass App.View names')
 
-        parts = args[0].split(".")
+        view_classes = get_all_subclasses(View, ignore_modules=IGNORE_MODULES)
+
+        # Update the VIEW_CLASS_SETTINGS here...
+        for cl in view_classes: 
+
+            class_name = cl.__name__ 
+
+            if class_name not in VIEW_CLASS_SETTINGS: 
+                VIEW_CLASS_SETTINGS[class_name] = {} 
+
+            VIEW_CLASS_SETTINGS[class_name]['import'] = cl
+
+        # Multiprocess app views
+        for app_view in args:
+            self.app_view(app_view, *args, **kwargs)
+
+
+    def process(self, app_view, *args, **kwargs):
+
+        # Processing starts here
+        parts = app_view.split(".")  # split the app and views
+
+        terminal_width = 80
+
+
+
+
+
+
 
         if not parts[1][0].isupper():    # Make sure the first letter is uppercase
             parts[1] = parts[1][0].upper() + parts[1][1:]

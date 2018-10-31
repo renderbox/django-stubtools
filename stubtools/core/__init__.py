@@ -85,3 +85,24 @@ def version_check(mode="gte", vcheck="0.0.0"):
 
     return False
 
+
+def get_all_subclasses(cls, ignore_modules=[]):
+    all_subclasses = []
+    ignore_list = tuple([ "<class '" + v for v in ignore_modules ])
+
+    for subclass in cls.__subclasses__():
+        if ignore_list:
+            if not str(subclass).startswith(ignore_list):
+                all_subclasses.append(subclass)
+        else:
+            all_subclasses.append(subclass)
+        all_subclasses.extend(get_all_subclasses(subclass, ignore_modules=ignore_modules))
+
+    return all_subclasses
+
+
+def class_path_as_string(cl):
+    return  str(cl)[8:-2]
+
+
+
