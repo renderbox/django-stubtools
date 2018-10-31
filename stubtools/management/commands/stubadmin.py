@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-10-30 17:20:36
+# @Last Modified time: 2018-10-30 17:30:28
 #--------------------------------------------
 
 import os.path
@@ -179,77 +179,23 @@ class Command(AppCommand):
 
         print("model_admin_class_end Index: %d" % model_admin_class_end)
 
-        # Update Render Context
-        # if not model in models:
-        #     models.append(model)
 
-        # models.sort()
-
-        # render_ctx['models'] = models
-
-
+        # Slice the existing admin.py into parts
         if 0 < model_import_line:
             render_ctx['pre_import'] = "\n".join(data_lines[0:model_import_line] )    # Everything up until the model import line
 
         if model_import_line < model_admin_class_end:
             render_ctx['pre_admin'] = "\n".join(data_lines[(model_import_line + 1):(model_admin_class_end + 1)] )    # Everything up until the model import line
 
-
-
         # pre_registration
-
+        if model_admin_class_end < admin_registry_end:
+            render_ctx['pre_registration'] = "\n".join(data_lines[(model_admin_class_end + 1):(admin_registry_end + 1)] )    # Everything up until the model import line
 
         # FOOTER
         if admin_registry_end < line_count:
-            render_ctx['post_registration'] = "\n".join(data_lines[admin_registry_end:line_count] )    # Everything up until the model import line
+            render_ctx['post_registration'] = "\n".join(data_lines[(admin_registry_end + 1):line_count] )    # Everything up until the model import line
 
-        print(render_ctx)
-
-
-
-
-
-
-
-        # if not import_entry or imported_models:
-        #     # FIND WHERE TO ADD THE IMPORT LINE
-        #     lines = []
-        #     for m in re.finditer( self.func_regex, data ):
-        #         lines.append( data.count("\n",0,m.start())+1 )
-
-        #     if lines:
-        #         lines.sort()
-        #         first_class_line = lines[0]
-
-        #     print("[%d]" % ( first_class_line ) )
-
-        #     lines = []
-        #     for m in re.finditer( self.imports_regex, data ):
-        #         lineno = data.count("\n",0,m.start())+1
-        #         if lineno < first_class_line:
-        #             lines.append(lineno)
-        #         #print("[%d] %s" % (lineno, data[ m.start() : m.end() ] ) )
-        #     if lines:
-        #         lines.sort()
-        #         last_import_line = lines[-1]
-
-        #     print("[%d]" % ( last_import_line ) )
-
-        # if not import_entry:
-        #     pass
-
-        # if imported_models:
-        #     imported_models = [x.strip() for x in imported_models[0].split(',')]
-        # else:
-        #     print("Adding Model with Import Line")
-
-        # if model not in imported_models:
-        #     print("Adding Model to Import Line")
-
-        #     # CREATE IMPORT LINE
-
-        #     # ADD TO IMPORT LINE
-
+        # print(render_ctx)
 
         env = Environment( loader=PackageLoader('stubtools', 'templates/commands/stubadmin'), autoescape=select_autoescape(['html']) )
         template = env.get_template('admin.j2')

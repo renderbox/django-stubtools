@@ -3,8 +3,9 @@
 from .models import {% for model in models %}{{ model }}{{ ", " if not loop.last }}{% endfor %}
 {{ pre_admin }}
 
-class {{ model_admin }}(admin.ModelAdmin):
-	pass
 
-{{ pre_registration }}admin.site.register({{ model }}, {{ model_admin }})
+class {{ model_admin }}(admin.ModelAdmin):
+    pass
+{{ pre_registration }}
+admin.site.register({{ model }}, {{ model_admin }})
 {{ post_registration }}
