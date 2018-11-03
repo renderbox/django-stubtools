@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-10-31 14:00:21
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-10-31 16:08:12
+# @Last Modified time: 2018-11-01 17:41:52
 # --------------------------------------------
 
 def selection_list(sel_list, prompt="Make a section", title="Selection", terminal_width=80, exitable=True, as_string=False):
@@ -95,7 +95,7 @@ def multi_selection_list(sel_list, prompt="Make a section", title="Selection", t
         old_row = row
 
     if exitable:
-        print( "\n 0) Done\n")
+        print( "\n d) Done\n")
         # print( "\n00) Cancel\n")
 
     # Make the selection
@@ -103,9 +103,13 @@ def multi_selection_list(sel_list, prompt="Make a section", title="Selection", t
 
     # Toggle selection based on new_selected results
 
-    if new_selected[0] == "0":
+    if new_selected[0] == "d":
+        selected.sort()
         return selected
     else:
+        for i in new_selected:
+            selected.append(sel_list[int(i) - 1])
+
         return multi_selection_list(sel_list, prompt=prompt, title=title, terminal_width=terminal_width, exitable=exitable, as_string=as_string, selected=selected)
 
 

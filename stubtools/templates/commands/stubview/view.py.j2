@@ -1,0 +1,27 @@
+{{ pre_import }}
+{# from django.views.generic import {% for module in models %}{{ module }}{{ ", " if not loop.last }}{% endfor %} #}
+{% if pre_view %}
+{{ pre_view }}
+{% else %}
+###############
+# MIXINS {# Local Mixins that you create #}
+###############
+
+
+###############
+# BASE VIEWS {# Any base level views you will inherit in your views below #}
+###############
+
+
+###############
+# VIEWS {# Views for your app #}
+###############{% endif %}
+
+class {{ page_class }}({{ view_class }}):
+	{% if description %}'''
+	{{ description }}
+	'''{% endif %}
+	{% for key, entry in attributes.items() %}{{ key }} = "{{ entry.value }}"{% endfor %}
+
+
+{{ post_view }}

@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-10-31 15:34:40
+# @Last Modified time: 2018-11-02 17:25:07
 #--------------------------------------------
 
 import re, os.path
@@ -15,244 +15,392 @@ from django.views.generic.base import View
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from stubtools.core import class_name, version_check, get_all_subclasses
-from stubtools.core.interaction import selection_list
+from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case
+from stubtools.core.prompt import selection_list
 
 
-VIEW_CLASS_SETTINGS = {'TemplateView':{'import':""}, 'ListView':{}, 'DetailView':{}, 'RedirectView':{}}
+VIEW_CLASS_SETTINGS = {
+    "TemplateView": {
+        "queries": [
+            {
+                "question": "Any comment you want to add to the view?",
+                "key": "comment",
+                'required': False
+            }
+        ]
+    },
+    "ListView": {
+        "queries": [
+            {
+                "question": "Which Model is this for?",
+                "key": "model",
+                'required': True
+            },
+            {
+                "question": "Which template to use?",
+                "key": "template_name",
+                "default": "%(app)s/%(model)s_list.html",
+                "type":str,
+                'required': True
+            }
+        ]
+    },
+    "DetailView": {
+        "queries": [
+            {
+                "question": "Which Model is this for?",
+                "key": "model",
+                'required': True
+            },
+            {
+                "question": "Slug Keyword?",
+                "key": "model",
+                'required': False,
+                "default": "%(model)s",
+            },
+            {
+                "question": "What variable should be used for the model instance in the template?",
+                "key": "model",
+                'required': False,
+                "default": "%(model)s",
+            },
+            {
+                "question": "",
+                "key": "form_class",
+                'required': True
+            },
+            {
+                "question": "Which template to use?",
+                "key": "template_name",
+                "default": "%(app)s/%(model)s_form.html",
+                "type":str,
+                'required': True
+            }
+        ]},
+    "FormView": {
+        "queries": [
+            {
+                "question": "Which Model is this for?",
+                "key": "model",
+                'required': True
+            },
+            {
+                "question": "",
+                "key": "form_class",
+                'required': True
+            },
+            {
+                "question": "Which template to use?",
+                "key": "template_name",
+                "default": "%(app)s/%(model)s_form.html",
+                "type":str,
+                'required': True
+            }
+        ]},
+    "RedirectView": {}
+}
+
+
 IGNORE_MODULES = ["django.views.i18n", "django.contrib.admin.views"]
 
+
+def parse_app_view(app_view):
+    parts = app_view.split(".")  # split the app and views
+
+    if len(parts) == 3:
+        return parts[0], parts[1], parts[2]
+
+    if len(parts) == 2:
+        return parts[0], parts[1], None
+
+    return parts[0], None, None
+
+
 class Command(AppCommand):
-    args = '<app.view_name>'
+    args = '<app.view.view_class>'
     help = 'creates a template and matching view for the given view name'
+    terminal_width = 80
 
 
     def handle(self, *args, **kwargs):
         if len(args) < 1:
             raise CommandError('Need to pass App.View names')
 
-        view_classes = get_all_subclasses(View, ignore_modules=IGNORE_MODULES)
-
-        # Update the VIEW_CLASS_SETTINGS here...
-        for cl in view_classes: 
-
-            class_name = cl.__name__ 
-
-            if class_name not in VIEW_CLASS_SETTINGS: 
-                VIEW_CLASS_SETTINGS[class_name] = {} 
-
-            VIEW_CLASS_SETTINGS[class_name]['import'] = cl
-
-        # Multiprocess app views
+        # batch process app views
         for app_view in args:
-            self.app_view(app_view, *args, **kwargs)
+            self.process(app_view, *args, **kwargs)
 
 
     def process(self, app_view, *args, **kwargs):
 
-        # Processing starts here
-        parts = app_view.split(".")  # split the app and views
+        class_based_views_available = version_check("gte", "1.3.0")        # SHOULD DEFAULT FOR 1.3+ TO True.  NEED ATTR IN settings.py TO CONFIG SET TO FALSE.
 
-        terminal_width = 80
+        # SPLIT THE APP, VIEW AND VIEW_CLASS
+        app, view, view_class = parse_app_view(app_view)
+
+        view_file = "%s/views.py" % app
+
+        if not view:
+            view = input("What is the name of the view? > ")
+
+        # MAKE SURE AT LEAST THE FIRST LETTER OF THE VIEW NAME IS CAPITALIZED
+        view = view[0].upper() + view[1:]
+
+        # Load the classes each time so they can be made to include views that were previously created
+        view_classes = get_all_subclasses(View, ignore_modules=IGNORE_MODULES)
+
+        # Update the VIEW_CLASS_SETTINGS module value
+        for cl in view_classes:
+            # print(cl.__module__)
+
+            class_name = cl.__name__    # Get the short name for the class
 
 
+            if class_name not in VIEW_CLASS_SETTINGS: 
+                VIEW_CLASS_SETTINGS[class_name] = {} 
 
+            VIEW_CLASS_SETTINGS[class_name]['module'] = cl.__module__   #".".join(cl.split(".")[:-1])  # Set the module to the full import path
 
+        classes = list(VIEW_CLASS_SETTINGS.keys())
 
+        # PICK THE VIEW CLASS TO USE BASED ON A LIST OF AVAILABLE CLASSES IF NOT SET IN THE COMMAND LINE
+        if not view_class:
+            view_class = selection_list(classes, as_string=True)
 
+        render_ctx = {'app':app, 'view':view, 'views':[],'view_class':view_class, 'attributes':{} }
 
-        if not parts[1][0].isupper():    # Make sure the first letter is uppercase
-            parts[1] = parts[1][0].upper() + parts[1][1:]
+        view_class_module = VIEW_CLASS_SETTINGS[view_class]['module']
 
-        name_split_regex = re.compile("([A-Z][a-z]+)")    # Splits the CammelCase naming
-        name_parts = name_split_regex.findall(parts[1])
+        # Break the Name up into parts
+        name_parts = split_camel_case(view)
 
+        # POP VIEW OFF THE NAME PARTS IF IT IS THERE
         if name_parts[-1] == "View":
-            page_class = parts[1]
+            render_ctx['page_class'] = view
             name_parts.pop(-1)
         else:
-            page_class = parts[1]+"View"
+            render_ctx['page_class'] = "%sView" % view
 
+        render_ctx['page'] = "_".join(name_parts).lower()
+        render_ctx['page_name'] = ' '.join(name_parts)
+
+        # Setting up for attributes to use different types
+        render_ctx['attributes']['template_name'] = {'type':"str", 'value':"%(app)s/%(page)s.html" % render_ctx }
+        render_ctx['resource'] = {'method':"path"}  # resource is used mainly in the URL template
+
+        #######################
+        # PARSE view.py
+        #######################
+
+        # view_import_line_regex = re.compile(r"^from " + VIEW_CLASS_SETTINGS[view_class]['module'] + " import (.+)", re.MULTILINE)
+
+        # if os.path.isfile( view_file ):
+        #     try:
+        #         FILE = open( view_file, "r")
+        #         data = FILE.read()
+        #         FILE.close()
+
+        #     except IOError as e:
+        #         pass                    # May need to add something here to handle a file locking issue
+
+        # # Slice and Dice the admin.py here
+        # data_lines = data.split("\n")
+        # line_count = len(data_lines)
+
+        # # Find the View Import Line
+        # for c, line in enumerate(data_lines):
+        #     check = self.view_import_line_regex.findall( line )
+
+        #     if check:
+        #         view_import_line = c                # Make note of the line number
+        #         render_ctx['views'].extend(check)   # Add the views from the same module to the list
+        #         break
+
+        #######################
+        # RENDER THE TEMPLATES
+        #######################
+
+        # Start Rendering a writing files
         env = Environment( loader=PackageLoader('stubtools', 'templates/commands/stubview'), autoescape=select_autoescape(['html']) )
+        template = env.get_template('view.py.j2')
 
-        # Using a Dictionary for clarity in strin replacements
-        context = {'app':parts[0], 'page':"_".join(name_parts).lower(), 'pageClass':page_class, 'page_name':' '.join(name_parts) }
-        tab = "\t"
-        context['tab'] = " " * 4
+        result = template.render(**render_ctx)
+        print(result)
 
-        use_class_based_views = version_check("gte", "1.3.0")        # SHOULD DEFAULT FOR 1.3+ TO True.  NEED ATTR IN settings.py TO CONFIG SET TO FALSE.
 
-        view_file = "%(app)s/views.py" % context
-        context['view_file'] = view_file
 
-        views = []
 
-        if use_class_based_views:
-            url_entry_regex = re.compile("url\(\S+ (\S+)" )
-        else:
-            url_entry_regex = re.compile("url\(\S+ '(\S+)'" )
+        # # module_regex = re.compile("%s import (.+)" % view_class_module)
 
-        # Get contents of views.py file
-        if os.path.isfile(view_file):
-            try:
-                FILE = open(view_file, "r")
-                data = FILE.read()
-                FILE.close()
-            except IOError as e:
-                print( "IO Error reading %s\n\t%s" % (view_file, tab, e) )
-                return
+        # # if class_based_views_available:
+        # #     url_entry_regex = re.compile("url\(\S+ (\S+)" )
+        # # else:
+        # #     url_entry_regex = re.compile("url\(\S+ '(\S+)'" )
 
-        insert_line = None
-        replace_line = None
+        # # TEMPLATE
+        # # App templates or Project Templates?
 
-        if use_class_based_views:
-            views = [ x.name for x in ast.parse(data).body if isinstance(x, ast.ClassDef) ]   # BEST PYTHON WAY TO DO THIS
-            view_name = context['pageClass']
-            view_import_path = "views.%s.as_view()" % (view_name)
-            context['view_import_path'] = view_import_path
+        # # Get contents of views.py file
+        # if os.path.isfile(view_file):
+        #     try:
+        #         FILE = open(view_file, "r")
+        #         data = FILE.read()
+        #         FILE.close()
+        #     except IOError as e:
+        #         print( "IO Error reading %s\n\t%s" % (view_file, tab, e) )
+        #         return
 
-            # CHECK IMPORT LINES
-            importers = { v.module : v for v in ast.parse(data).body if isinstance(v, ast.ImportFrom) }
+        # insert_line = None
+        # replace_line = None
 
-            if not importers:
-                insert_line = (0, "from django.views.generic import TemplateView\n\n")
-            else:
-                if "django.views.generic" in importers:
-                    name_list = [ x.name for x in importers["django.views.generic"].names ]
+        # if class_based_views_available:
+        #     views = [ x.name for x in ast.parse(data).body if isinstance(x, ast.ClassDef) ]   # BEST PYTHON WAY TO DO THIS
+        #     view_name = render_ctx['page_class']
+        #     view_import_path = "views.%s.as_view()" % (view_name)
+        #     render_ctx['view_import_path'] = view_import_path
 
-                    if "TemplateView" not in name_list:
-                        print("Adde Module into line: %d -> %s" % (importers["django.views.generic"].lineno, "TemplateView" ) )     # NEED AUTOMATIC WAY TO INSERT THIS
-                else:
-                    # GET THE LAST IMPORT LINE
-                    import_number = 0
-                    insert_line = (import_number, "from django.views.generic import TemplateView\n")
+        #     # CHECK IMPORT LINES
+        #     importers = { v.module : v for v in ast.parse(data).body if isinstance(v, ast.ImportFrom) }
 
-        else:
-            views = [ x.name for x in ast.parse(data).body if isinstance(x, ast.FunctionDef) ]   # BEST PYTHON WAY TO DO THIS
-            view_name = ("%(page)s_view" % context)
-            view_import_path = "%(app)s.views.%(page)s_view" % context
-            context['view_import_path'] = view_import_path
+        #     if not importers:
+        #         insert_line = (0, "from django.views.generic import %s\n\n" % (view_class))
+        #     else:
+        #         if "django.views.generic" in importers:
+        #             name_list = [ x.name for x in importers["django.views.generic"].names ]
 
-        url_name = "%(app)s-%(page)s" % context
-        context['url_name'] = url_name
-        template = "%(app)s/%(page)s.html" % context
+        #             if view_class not in name_list:
+        #                 print("Adde Module into line: %d -> %s" % (importers["django.views.generic"].lineno, view_class ) )     # NEED AUTOMATIC WAY TO INSERT THIS
+        #         else:
+        #             # GET THE LAST IMPORT LINE
+        #             import_number = 0
+        #             insert_line = (import_number, "from django.views.generic import %s\n" % (view_class) )
 
-        FILE = open(view_file, "r")
-        lines = FILE.readlines()
-        FILE.close()
-        #lines = [ x.strip() for x in FILE.readlines() ]    # WILL STRIP OFF TABS
-        dirty = False
+        # else:
+        #     views = [ x.name for x in ast.parse(data).body if isinstance(x, ast.FunctionDef) ]   # BEST PYTHON WAY TO DO THIS
+        #     view_name = ("%(page)s_view" % render_ctx)
+        #     view_import_path = "%(app)s.views.%(page)s_view" % render_ctx
+        #     render_ctx['view_import_path'] = view_import_path
 
-        if insert_line:
-            lines.insert( insert_line[0], insert_line[1] )
-            dirty = True
+        # url_name = "%(app)s-%(page)s" % render_ctx
+        # render_ctx['url_name'] = url_name
+        # template = "%(app)s/%(page)s.html" % render_ctx
 
-        # If the new page name is not in the views.py, add the stub
-        if view_name not in views:
-            self.stdout.write( "ADDING: %s to %s\n" % (context['page'], view_file) )
-            dirty = True
+        # FILE = open(view_file, "r")
+        # lines = FILE.readlines()
+        # FILE.close()
+        # #lines = [ x.strip() for x in FILE.readlines() ]    # WILL STRIP OFF TABS
+        # dirty = False
 
-            if use_class_based_views:
-                # CHECK FOR IMPORT LINE IN FILE
+        # if insert_line:
+        #     lines.insert( insert_line[0], insert_line[1] )
+        #     dirty = True
 
-                lines.extend( [ "##-" + "-" * len(context["page_name"]) + "\n",
-                                "## %(page_name)s\n\n" % context,
-                                "class %s(TemplateView):\n" % view_name,
-                                context['tab'] + "template_name = '%s'\n\n\n" % template ] )
-            else:
-                lines.extend( [ "def %s(request):\n" % view_name,
-                                context['tab'] + "ctx = RequestContext(request)\n",
-                                context['tab'] + "return render_to_response('%s', ctx )\n" % template ] )
+        # # If the new page name is not in the views.py, add the stub
+        # if view_name not in views:
+        #     self.stdout.write( "ADDING: %s to %s\n" % (render_ctx['page'], view_file) )
+        #     dirty = True
 
-        else:
-            self.stdout.write( "EXISTING VIEWS: %s\n" % ", ".join(views) )
+        #     if class_based_views_available:
+        #         # CHECK FOR IMPORT LINE IN FILE
 
-        if dirty:
-            FILE = open(view_file, "w")
-            FILE.writelines( lines )
-            FILE.close()
+        #         lines.extend( [ "##-" + "-" * len(render_ctx["page_name"]) + "\n",
+        #                         "## %(page_name)s\n\n" % render_ctx,
+        #                         "class %s(%s):\n" % (view_name, view_class),
+        #                         render_ctx['tab'] + "template_name = '%s'\n\n\n" % template ] )
+        #     else:
+        #         lines.extend( [ "def %s(request):\n" % view_name,
+        #                         render_ctx['tab'] + "ctx = Requestrender_ctx(request)\n",
+        #                         render_ctx['tab'] + "return render_to_response('%s', ctx )\n" % template ] )
 
-        # Create the template stub
-        # todo: check to see if the template should be written in the project root or app directory
-        template_file = "templates/%s" % template
+        # else:
+        #     self.stdout.write( "EXISTING VIEWS: %s\n" % ", ".join(views) )
 
-        # Need to check for directory and add it if it is missing from the template directory
-        if not os.path.isfile(template_file):
+        # if dirty:
+        #     FILE = open(view_file, "w")
+        #     FILE.writelines( lines )
+        #     FILE.close()
 
-            dest_path = "templates/%(app)s" % context
-            if not os.path.exists(dest_path):
-                os.makedirs(dest_path)
+        # # Create the template stub
+        # # todo: check to see if the template should be written in the project root or app directory
+        # template_file = "templates/%s" % template
 
-            self.stdout.write( "ADDING HTML TEMPLATE FILE: %s\n" % template_file )
-            FILE = open( template_file, "w" )
-            template = env.get_template('page.html.j2')
-            FILE.write( template.render(**context) )
-            FILE.close()
+        # # Need to check for directory and add it if it is missing from the template directory
+        # if not os.path.isfile(template_file):
 
-        url_file = "%(app)s/urls.py" % context
+        #     dest_path = "templates/%(app)s" % render_ctx
+        #     if not os.path.exists(dest_path):
+        #         os.makedirs(dest_path)
 
-        #################
-        # UPDATE THE urls.py FILE
+        #     self.stdout.write( "ADDING HTML TEMPLATE FILE: %s\n" % template_file )
+        #     FILE = open( template_file, "w" )
+        #     template = env.get_template('page.html.j2')
+        #     FILE.write( template.render(**render_ctx) )
+        #     FILE.close()
 
-        context['page_link'] = "%(page)s/" % context
+        # url_file = "%(app)s/urls.py" % render_ctx
 
-        if context['page'] == "index":
-            context['page_link'] = ""
+        # #################
+        # # UPDATE THE urls.py FILE
 
-        if os.path.isfile(url_file):
-            '''
-            If there is a urls.py file do this
-            '''
-            try:
-                FILE = open(url_file, "r")
-                data = FILE.read()
-                urls = url_entry_regex.findall( data )
-                FILE.close()
+        # render_ctx['page_link'] = "%(page)s/" % render_ctx
 
-            except IOError as e:
-                print( "IO Error reading %s, Step Skipped.\n\t%s" % (view_file, e) )
+        # if render_ctx['page'] == "index":
+        #     render_ctx['page_link'] = ""
 
-            if context['view_import_path'] + "," not in urls:   # Make sure to add the comma, which is caught by the regex pattern
-                FILE = open(url_file, "a")
+        # if os.path.isfile(url_file):
+        #     '''
+        #     If there is a urls.py file do this
+        #     '''
+        #     try:
+        #         FILE = open(url_file, "r")
+        #         data = FILE.read()
+        #         urls = url_entry_regex.findall( data )
+        #         FILE.close()
 
-                # TODO: REBUILD THE WHOLE FILE WITH THE URLs INSERTED INTO THE LIST RATHER THAN APPEND
+        #     except IOError as e:
+        #         print( "IO Error reading %s, Step Skipped.\n\t%s" % (view_file, e) )
 
-                if use_class_based_views:
-                    if version_check("gte", "1.10.0"):
-                        url_py = "urlpatterns += [\n%(tab)surl(r'^%(page_link)s$', %(view_import_path)s, name='%(url_name)s')\n]" % (context)
-                    else:
-                        url_py = "urlpatterns += patterns('',\n%(tab)surl(r'^%(page_link)s$', %(view_import_path)s, name='%(url_name)s'),\n)" % (context)
-                else:
-                    url_py = "urlpatterns += patterns('',\n%(tab)surl(r'^%(page_link)s$', '%(view_import_path)s', name='%(url_name)s'),\n)" % (context)
+        #     if render_ctx['view_import_path'] + "," not in urls:   # Make sure to add the comma, which is caught by the regex pattern
+        #         FILE = open(url_file, "a")
 
-                FILE.write( url_py + "\n" )
-                FILE.close()
+        #         # TODO: REBUILD THE WHOLE FILE WITH THE URLs INSERTED INTO THE LIST RATHER THAN APPEND
 
-        else:
-            '''
-            If there is no urls.py file do this
-            '''
-            FILE = open(url_file, "w")
+        #         if class_based_views_available:
+        #             if version_check("gte", "1.10.0"):
+        #                 url_py = "urlpatterns += [\n%(tab)surl(r'^%(page_link)s$', %(view_import_path)s, name='%(url_name)s')\n]" % (render_ctx)
+        #             else:
+        #                 url_py = "urlpatterns += patterns('',\n%(tab)surl(r'^%(page_link)s$', %(view_import_path)s, name='%(url_name)s'),\n)" % (render_ctx)
+        #         else:
+        #             url_py = "urlpatterns += patterns('',\n%(tab)surl(r'^%(page_link)s$', '%(view_import_path)s', name='%(url_name)s'),\n)" % (render_ctx)
 
-            if version_check("gte", "1.10.0"):
-                url_py = ["from django.conf.urls import url", "from . import views\n" % context, "urlpatterns = [" ]
-                post_append = "]"
-            elif version_check("gte", "1.5.0"):
-                url_py = ["from django.conf.urls import *", "from %(app)s import views\n" % context, "urlpatterns = patterns(''," ]
-                post_append = ")"
-            else:
-                url_py = ["from django.conf.urls import *\n", "urlpatterns = patterns(''," ]
-                post_append = ")"
+        #         FILE.write( url_py + "\n" )
+        #         FILE.close()
 
-            if use_class_based_views:
-                url_py.append(   "%(tab)surl(r'^%(page_link)s$', %(view_import_path)s, name='%(url_name)s'),\n)" % ( context ) )
-            else:
-                url_py.append(   "%(tab)surl(r'^%(page_link)s$', '%(view_import_path)s', name='%(url_name)s'),\n)" % ( context ) )
+        # else:
+        #     '''
+        #     If there is no urls.py file do this
+        #     '''
+        #     FILE = open(url_file, "w")
 
-            url_py.append(post_append)
+        #     if version_check("gte", "1.10.0"):
+        #         url_py = ["from django.conf.urls import url", "from . import views\n" % render_ctx, "urlpatterns = [" ]
+        #         post_append = "]"
+        #     elif version_check("gte", "1.5.0"):
+        #         url_py = ["from django.conf.urls import *", "from %(app)s import views\n" % render_ctx, "urlpatterns = patterns(''," ]
+        #         post_append = ")"
+        #     else:
+        #         url_py = ["from django.conf.urls import *\n", "urlpatterns = patterns(''," ]
+        #         post_append = ")"
 
-            FILE.write( "\n".join(url_py) + "\n" )
-            FILE.close()
+        #     if class_based_views_available:
+        #         url_py.append(   "%(tab)surl(r'^%(page_link)s$', %(view_import_path)s, name='%(url_name)s'),\n)" % ( render_ctx ) )
+        #     else:
+        #         url_py.append(   "%(tab)surl(r'^%(page_link)s$', '%(view_import_path)s', name='%(url_name)s'),\n)" % ( render_ctx ) )
+
+        #     url_py.append(post_append)
+
+        #     FILE.write( "\n".join(url_py) + "\n" )
+        #     FILE.close()
 
 
     def print_break(self, lable):

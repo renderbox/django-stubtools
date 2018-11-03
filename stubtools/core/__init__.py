@@ -4,13 +4,21 @@ from django.conf import settings
 from stubtools.exceptions import NoProjectPathException
 import django
 
-def underscore_camel_case(s):
+# Compiled REGEX Patterns
+name_split_regex = re.compile("([A-Z][a-z]+)")
+
+
+def underscore_camel_case(string):
     """Adds spaces to a camel case string.  Failure to space out string returns the original string.
     >>> space_out_camel_case('DMLSServicesOtherBSTextLLC')
     'DMLS Services Other BS Text LLC'
     """
 
-    return re.sub('((?=[A-Z][a-z])|(?<=[a-z])(?=[A-Z]))', '_', s)
+    return re.sub('((?=[A-Z][a-z])|(?<=[a-z])(?=[A-Z]))', '_', string)
+
+
+def split_camel_case(string):
+    return name_split_regex.findall(string)
 
 
 def import_line_check(regex, text, module):
