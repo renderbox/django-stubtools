@@ -21,7 +21,7 @@ class {{ page_class }}({{ view_class }}):
 	{% if description %}'''
 	{{ description }}
 	'''{% endif %}
-	{% for key, value in attributes.items() %}{{ key }} = "{{ value }}"
+	{% for key, value in attributes.items() %}{{ key }} = {{ value }}
 	{% endfor %}
 
 

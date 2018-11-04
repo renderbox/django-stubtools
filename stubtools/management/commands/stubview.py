@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-03 20:44:53
+# @Last Modified time: 2018-11-03 21:39:47
 #--------------------------------------------
 
 import re, os.path
@@ -41,7 +41,7 @@ VIEW_CLASS_SETTINGS = {
                 "question": "Which template to use?",
                 "key": "template_name",
                 "default": "%(app)s/%(model)s_list.html",
-                "type":str,
+                'attr_type':"str",
                 'required': True
             }
         ],
@@ -75,7 +75,7 @@ VIEW_CLASS_SETTINGS = {
                 "question": "Which template to use?",
                 "key": "template_name",
                 "default": "%(app)s/%(model)s_form.html",
-                "type":str,
+                'attr_type':"str",
                 'required': True
             }
         ],
@@ -97,7 +97,7 @@ VIEW_CLASS_SETTINGS = {
                 "question": "Which template to use?",
                 "key": "template_name",
                 "default": "%(app)s/%(model)s_form.html",
-                "type":str,
+                'attr_type':"str",
                 'required': True
             }
         ]},
@@ -124,17 +124,22 @@ def ask_question(question, default=None, required=False):
     '''
     This is broken out into a function so it can ask the question over until it's answered if it's required.
     '''
-    if default:
-        result = input("%s (Default: %s) > " % (question, default))
+    if required:
+        prompt = "Required: "
     else:
-        result = input("%s > " % question)
+        prompt = ""
 
-    if not result and default:  # If nothing is picked and there is a default value, use that.
-        result = default
+    if default:
+        prompt += "%s (Default: %s) > " % (question, default)
+        result = input(prompt) or default
+    else:
+        prompt += "%s > " % question
+        result = input(prompt)
 
     if required and not result:
         result = ask_question(question, default=default, required=required)
 
+    print(result)
     return result
 
 
@@ -187,7 +192,7 @@ class Command(AppCommand):
         if not view_class:
             view_class = selection_list(classes, as_string=True)
 
-        render_ctx = {'app':app, 'view':view, 'views':[],'view_class':view_class, 'attributes':{'app':app} }
+        render_ctx = {'app':app, 'view':view, 'views':[],'view_class':view_class, 'attributes':{} }
 
         view_class_module = VIEW_CLASS_SETTINGS[view_class]['module']
 
@@ -196,9 +201,19 @@ class Command(AppCommand):
             default = query.get("default", None)
 
             if default:
-                default = default % render_ctx['attributes']
+                attr_ctx = {'app': app}
+                attr_ctx.update(render_ctx['attributes'])
+                attr_ctx['model'] = "_".join(split_camel_case(attr_ctx['model'])).lower()
+                default = default % attr_ctx
 
-            render_ctx['attributes'][query['key']] = ask_question(query["question"], default=default, required=query.get("required", False) )
+            answer = ask_question(query["question"], default=default, required=query.get("required", False) )
+
+            value_type = query.get('attr_type', None)
+
+            if value_type == "str":
+                answer = '\"%s\"' % answer
+
+            render_ctx['attributes'][query['key']] = answer 
 
         page_append = VIEW_CLASS_SETTINGS[view_class].get("append", "View")     # Given the view type, there is a common convention for appending to the name of the "page's" View's Class
 
@@ -215,7 +230,6 @@ class Command(AppCommand):
         render_ctx['page_name'] = ' '.join(name_parts)      # Human Friendly Format
 
         # Setting up for attributes to use different types
-        render_ctx['attributes']['template_name'] = {'type':"str", 'value':"%(app)s/%(page)s.html" % render_ctx }
         render_ctx['resource'] = {'method':"path"}  # resource is used mainly in the URL template
 
         #######################
