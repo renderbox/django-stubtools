@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-02 17:25:07
+# @Last Modified time: 2018-11-03 20:44:53
 #--------------------------------------------
 
 import re, os.path
@@ -27,7 +27,8 @@ VIEW_CLASS_SETTINGS = {
                 "key": "comment",
                 'required': False
             }
-        ]
+        ],
+        "append": "View"
     },
     "ListView": {
         "queries": [
@@ -43,7 +44,8 @@ VIEW_CLASS_SETTINGS = {
                 "type":str,
                 'required': True
             }
-        ]
+        ],
+        "append": "ListView"
     },
     "DetailView": {
         "queries": [
@@ -76,7 +78,9 @@ VIEW_CLASS_SETTINGS = {
                 "type":str,
                 'required': True
             }
-        ]},
+        ],
+        "append": "DetailView"
+    },
     "FormView": {
         "queries": [
             {
@@ -116,6 +120,24 @@ def parse_app_view(app_view):
     return parts[0], None, None
 
 
+def ask_question(question, default=None, required=False):
+    '''
+    This is broken out into a function so it can ask the question over until it's answered if it's required.
+    '''
+    if default:
+        result = input("%s (Default: %s) > " % (question, default))
+    else:
+        result = input("%s > " % question)
+
+    if not result and default:  # If nothing is picked and there is a default value, use that.
+        result = default
+
+    if required and not result:
+        result = ask_question(question, default=default, required=required)
+
+    return result
+
+
 class Command(AppCommand):
     args = '<app.view.view_class>'
     help = 'creates a template and matching view for the given view name'
@@ -151,15 +173,13 @@ class Command(AppCommand):
 
         # Update the VIEW_CLASS_SETTINGS module value
         for cl in view_classes:
-            # print(cl.__module__)
-
             class_name = cl.__name__    # Get the short name for the class
 
 
             if class_name not in VIEW_CLASS_SETTINGS: 
                 VIEW_CLASS_SETTINGS[class_name] = {} 
 
-            VIEW_CLASS_SETTINGS[class_name]['module'] = cl.__module__   #".".join(cl.split(".")[:-1])  # Set the module to the full import path
+            VIEW_CLASS_SETTINGS[class_name]['module'] = cl.__module__   # Set the module to the full import path
 
         classes = list(VIEW_CLASS_SETTINGS.keys())
 
@@ -167,22 +187,32 @@ class Command(AppCommand):
         if not view_class:
             view_class = selection_list(classes, as_string=True)
 
-        render_ctx = {'app':app, 'view':view, 'views':[],'view_class':view_class, 'attributes':{} }
+        render_ctx = {'app':app, 'view':view, 'views':[],'view_class':view_class, 'attributes':{'app':app} }
 
         view_class_module = VIEW_CLASS_SETTINGS[view_class]['module']
 
-        # Break the Name up into parts
-        name_parts = split_camel_case(view)
+        # Ask the Queries
+        for query in VIEW_CLASS_SETTINGS[view_class].get("queries", []):
+            default = query.get("default", None)
+
+            if default:
+                default = default % render_ctx['attributes']
+
+            render_ctx['attributes'][query['key']] = ask_question(query["question"], default=default, required=query.get("required", False) )
+
+        page_append = VIEW_CLASS_SETTINGS[view_class].get("append", "View")     # Given the view type, there is a common convention for appending to the name of the "page's" View's Class
 
         # POP VIEW OFF THE NAME PARTS IF IT IS THERE
-        if name_parts[-1] == "View":
+        if view.endswith(page_append):
             render_ctx['page_class'] = view
-            name_parts.pop(-1)
         else:
-            render_ctx['page_class'] = "%sView" % view
+            render_ctx['page_class'] = view + page_append
 
-        render_ctx['page'] = "_".join(name_parts).lower()
-        render_ctx['page_name'] = ' '.join(name_parts)
+        # Break the Name up into parts
+        name_parts = split_camel_case(view[:(-1 * len(page_append))])
+
+        render_ctx['page'] = "_".join(name_parts).lower()   # Name used in the URL and template
+        render_ctx['page_name'] = ' '.join(name_parts)      # Human Friendly Format
 
         # Setting up for attributes to use different types
         render_ctx['attributes']['template_name'] = {'type':"str", 'value':"%(app)s/%(page)s.html" % render_ctx }
