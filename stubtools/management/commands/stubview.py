@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-05 11:56:18
+# @Last Modified time: 2018-11-05 12:32:37
 #--------------------------------------------
 
 import re, os.path
@@ -15,7 +15,7 @@ from django.views.generic.base import View
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case
+from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case
 from stubtools.core.prompt import ask_question, selection_list, horizontal_rule
 from stubtools.core.regex import FUNCTION_OR_CLASS_REGEX, IMPORT_REGEX
 
@@ -170,7 +170,9 @@ class Command(AppCommand):
         if not view_class:
             view_class = selection_list(classes, as_string=True)
 
-        render_ctx = {'app':app, 'view':view, 'views':[],'view_class':view_class, 'attributes':{} }
+        view_name = "_".join(split_camel_case(view)).lower()
+
+        render_ctx = {'app':app, 'view':view, 'view_name':view_name, 'views':[],'view_class':view_class, 'attributes':{} }
 
         view_class_module = VIEW_CLASS_SETTINGS[view_class]['module']
 
@@ -179,8 +181,9 @@ class Command(AppCommand):
             default = query.get("default", None)
 
             if default:
-                attr_ctx = {'app': app}
+                attr_ctx = {'app': app, 'view_name':view_name}
                 attr_ctx.update(render_ctx['attributes'])
+                print(attr_ctx)
                 attr_ctx['model'] = "_".join(split_camel_case(attr_ctx['model'])).lower()
                 default = default % attr_ctx
 
@@ -283,12 +286,19 @@ class Command(AppCommand):
         else:
             view_start_index = import_line + 1
 
-        # print("IMPORT import_line = %d" % (import_line) )
-        # print("IMPORT view_start_index = %d" % (view_start_index) )
-        
-        # 3) Find the Last Class/Function
+        # 3) Find where the post_view starts
 
+        # Search backwards until there is line that is not blank or a starting with a '#'.
+        # This is here to provide recognition for footers on files that may be there
+        # todo: Add support for """/''' blocks?
 
+        for c, line in reversed(list(enumerate(data_lines))):
+            cleaned_line = line.strip()
+
+            if cleaned_line:
+                if not cleaned_line.startswith("#"):
+                    view_end_index = c + 1
+                    break
 
         # 4) Build the sections
 

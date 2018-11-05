@@ -1,4 +1,4 @@
-# HERE ARE SOME COMMENTS
+# 0 HERE ARE SOME COMMENTS
 from django.views.generic import TemplateView
 from django.shortcuts import render
 from django.views.generic.list import ListView

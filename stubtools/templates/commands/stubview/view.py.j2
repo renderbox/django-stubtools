@@ -2,25 +2,27 @@
 {{ import_statement }}{% if pre_view %}
 {{ pre_view }}
 {% else %}
+
+
 ###############
-# MIXINS {# Local Mixins that you create #}
+# BASE VIEWS - Any base level views you will inherit in your views below
 ###############
 
 
 ###############
-# BASE VIEWS {# Any base level views you will inherit in your views below #}
+# MIXINS - Local Mixins that you create
 ###############
 
 
 ###############
-# VIEWS {# Views for your app #}
+# VIEWS - Views for your app
 ###############{% endif %}
 {% if page_class %}
 class {{ page_class }}({{ view_class }}):{% if description %}
 	'''
 	{{ description }}
 	'''{% endif %}
-	{% for key, value in attributes.items() %}{{ key }} = {{ value }}
-	{% endfor %}
+    {% for key, value in attributes.items() %}{{ key }} = {{ value }}
+    {% endfor %}
 {% endif %}
 {{ post_view }}
