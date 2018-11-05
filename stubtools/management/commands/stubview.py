@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-05 11:19:59
+# @Last Modified time: 2018-11-05 11:56:18
 #--------------------------------------------
 
 import re, os.path
@@ -16,7 +16,7 @@ from django.views.generic.base import View
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case
-from stubtools.core.prompt import selection_list, horizontal_rule
+from stubtools.core.prompt import ask_question, selection_list, horizontal_rule
 from stubtools.core.regex import FUNCTION_OR_CLASS_REGEX, IMPORT_REGEX
 
 
@@ -121,29 +121,6 @@ def parse_app_view(app_view):
     return parts[0], None, None
 
 
-def ask_question(question, default=None, required=False):
-    '''
-    This is broken out into a function so it can ask the question over until it's answered if it's required.
-    '''
-    if required:
-        prompt = "Required: "
-    else:
-        prompt = ""
-
-    if default:
-        prompt += "%s (Default: %s) > " % (question, default)
-        result = input(prompt) or default
-    else:
-        prompt += "%s > " % question
-        result = input(prompt)
-
-    if required and not result:
-        result = ask_question(question, default=default, required=required)
-
-    print(result)
-    return result
-
-
 class Command(AppCommand):
     args = '<app.view.view_class>'
     help = 'creates a template and matching view for the given view name'
@@ -218,6 +195,8 @@ class Command(AppCommand):
 
         page_append = VIEW_CLASS_SETTINGS[view_class].get("append", "View")     # Given the view type, there is a common convention for appending to the name of the "page's" View's Class
 
+        render_ctx['description'] = ask_question("Did you want to add a quick description?")
+
         # POP VIEW OFF THE NAME PARTS IF IT IS THERE
         if view.endswith(page_append):
             render_ctx['page_class'] = view
@@ -252,8 +231,8 @@ class Command(AppCommand):
         import_start_index = 0
         import_end_index = 0
         import_line = None
-        view_start_line = line_count
-        view_end_line = line_count
+        view_start_index = line_count
+        view_end_index = line_count
 
         # Segment Values
         pre_import = None
@@ -264,85 +243,58 @@ class Command(AppCommand):
 
         for c, line in enumerate(data_lines):
             if FUNCTION_OR_CLASS_REGEX.findall( line ):
-                view_start_line = c       # Make note of the line number
+                view_start_index = c       # Make note of the line number
                 break
 
-        # print("VIEWS START ON INDEX: %d" % view_start_line)
-
-
-        # 2) Check imports in the section before the Classes and Functions
-
-        # print(data_lines[:view_start_line])
-        # print("IMPORT ENDS ON INDEX: %d" % view_start_line)
-        # print("LOOKING FOR MODULE: %s" % view_class_module)
         pattern = "^from %s import (.+)" % view_class_module
-        # pettern = pattern.encode('string-escape')
-        # print("PATTERN: %s" % pattern)
         module_regex = re.compile(pattern, re.MULTILINE)
-        # modules = []
 
-        import_zone = data_lines[:view_start_line]
+        import_zone = data_lines[:view_start_index]
+        modules = []
 
         for c, line in enumerate(import_zone):
-            modules = module_regex.findall( line )
+            modules_check = module_regex.findall( line )
 
-            if modules:
-                import_line = c       # Make note of the line number
+            if modules_check:
+                import_line = c             # Record the line number and break at the first match
+                modules.extend(modules_check)
+                break
 
-        modules.append(view_class)
-
-        print(modules)
-        # print("IMPORT LINE = %s" % (import_line) )
+        if view_class not in modules:
+            modules.append(view_class)
+        modules.sort()
 
         # PULL OUT THE IMPORTED ITEMS AND REBUILD THE LINE
         render_ctx['import_statement'] = "from %s import %s" % (view_class_module, ", ".join(modules))
 
         if not import_line:
 
-            # If the module is not already imported, find the last import module line and add it below there
-
-            # for c, line in enumerate(import_zone):
-            #     if IMPORT_REGEX.findall( line ):
-            #         import_start_index = c       # Make note of the line number
-            #         break
-
-            if view_start_line > 0:
-                import_end_index = view_start_line - 1
+            if view_start_index > 0:
+                import_end_index = view_start_index - 1
             else:
-                import_end_index = view_start_line
+                import_end_index = view_start_index
 
             for c, line in enumerate(import_zone):
                 if IMPORT_REGEX.findall( line ):
                     import_end_index = c       # Make note of the line number
 
-            print("IMPORT END = %d" % (import_end_index) )
             import_line = import_end_index + 1
+            view_start_index = import_end_index + 1
+        else:
+            view_start_index = import_line + 1
 
-
+        # print("IMPORT import_line = %d" % (import_line) )
+        # print("IMPORT view_start_index = %d" % (view_start_index) )
         
-
-
-
         # 3) Find the Last Class/Function
+
+
 
         # 4) Build the sections
 
-        # 5) Assemble the file
-
-
-
-        # # Find the View Import Line
-        # for c, line in enumerate(data_lines):
-        #     check = self.view_import_line_regex.findall( line )
-
-        #     if check:
-        #         view_import_line = c                # Make note of the line number
-        #         render_ctx['views'].extend(check)   # Add the views from the same module to the list
-        #         break
-
         render_ctx['pre_import'] = "\n".join(data_lines[:import_line])
-        render_ctx['pre_view'] = "\n".join(data_lines[import_line:view_end_line])
-        render_ctx['post_view'] = "\n".join(data_lines[view_end_line:])
+        render_ctx['pre_view'] = "\n".join(data_lines[view_start_index:view_end_index])
+        render_ctx['post_view'] = "\n".join(data_lines[view_end_index:])
 
         # PRE-IMPORT RESULTS
         print( horizontal_rule() )
@@ -355,6 +307,8 @@ class Command(AppCommand):
         print("POST-VIEW:")
         print(render_ctx['post_view'])
         print( horizontal_rule() )
+
+        # 5) Assemble the file
 
         #######################
         # RENDER THE TEMPLATES

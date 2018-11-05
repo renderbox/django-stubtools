@@ -1,6 +1,5 @@
 {{ pre_import }}
-{{ import_statement }}
-{% if pre_view %}
+{{ import_statement }}{% if pre_view %}
 {{ pre_view }}
 {% else %}
 ###############
@@ -17,8 +16,8 @@
 # VIEWS {# Views for your app #}
 ###############{% endif %}
 {% if page_class %}
-class {{ page_class }}({{ view_class }}):
-	{% if description %}'''
+class {{ page_class }}({{ view_class }}):{% if description %}
+	'''
 	{{ description }}
 	'''{% endif %}
 	{% for key, value in attributes.items() %}{{ key }} = {{ value }}

@@ -3,11 +3,35 @@
 # @Author: Grant Viklund
 # @Date:   2018-10-31 14:00:21
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-05 10:51:29
+# @Last Modified time: 2018-11-05 11:51:50
 # --------------------------------------------
 
 def horizontal_rule(div_char="-", terminal_width=80):
     return "#%s" % (div_char * (terminal_width - 1))
+
+
+def ask_question(question, default=None, required=False):
+    '''
+    This is broken out into a function so it can ask the question over until it's answered if it's required.
+    '''
+    if required:
+        prompt = "Required: "
+    else:
+        prompt = ""
+
+    if default:
+        prompt += "%s (Default: %s) > " % (question, default)
+        result = input(prompt) or default
+    else:
+        prompt += "%s > " % question
+        result = input(prompt)
+
+    if required and not result:
+        result = ask_question(question, default=default, required=required)
+
+    print(result)
+    return result
+
 
 def selection_list(sel_list, prompt="Make a section", title="Selection", terminal_width=80, exitable=True, as_string=False):
 
