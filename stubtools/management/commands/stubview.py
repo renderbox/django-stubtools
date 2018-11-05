@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-05 12:32:37
+# @Last Modified time: 2018-11-05 14:28:00
 #--------------------------------------------
 
 import re, os.path
@@ -15,110 +15,10 @@ from django.views.generic.base import View
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case
+from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case, parse_app_input
 from stubtools.core.prompt import ask_question, selection_list, horizontal_rule
 from stubtools.core.regex import FUNCTION_OR_CLASS_REGEX, IMPORT_REGEX
-
-
-VIEW_CLASS_SETTINGS = {
-    "TemplateView": {
-        "queries": [
-            {
-                "question": "Any comment you want to add to the view?",
-                "key": "comment",
-                'required': False
-            }
-        ],
-        "append": "View"
-    },
-    "ListView": {
-        "queries": [
-            {
-                "question": "Which Model is this for?",
-                "key": "model",
-                'required': True
-            },
-            {
-                "question": "Which template to use?",
-                "key": "template_name",
-                "default": "%(app)s/%(model)s_list.html",
-                'attr_type':"str",
-                'required': True
-            }
-        ],
-        "append": "ListView"
-    },
-    "DetailView": {
-        "queries": [
-            {
-                "question": "Which Model is this for?",
-                "key": "model",
-                'required': True
-            },
-            {
-                "question": "Slug Keyword?",
-                "key": "model",
-                'required': False,
-                "default": "%(model)s",
-            },
-            {
-                "question": "What variable should be used for the model instance in the template?",
-                "key": "model",
-                'required': False,
-                "default": "%(model)s",
-            },
-            {
-                "question": "",
-                "key": "form_class",
-                'required': True
-            },
-            {
-                "question": "Which template to use?",
-                "key": "template_name",
-                "default": "%(app)s/%(model)s_form.html",
-                'attr_type':"str",
-                'required': True
-            }
-        ],
-        "append": "DetailView"
-    },
-    "FormView": {
-        "queries": [
-            {
-                "question": "Which Model is this for?",
-                "key": "model",
-                'required': True
-            },
-            {
-                "question": "",
-                "key": "form_class",
-                'required': True
-            },
-            {
-                "question": "Which template to use?",
-                "key": "template_name",
-                "default": "%(app)s/%(model)s_form.html",
-                'attr_type':"str",
-                'required': True
-            }
-        ]},
-    "RedirectView": {}
-}
-
-
-IGNORE_MODULES = ["django.views.i18n", "django.contrib.admin.views"]
-
-
-def parse_app_view(app_view):
-    parts = app_view.split(".")  # split the app and views
-
-    if len(parts) == 3:
-        return parts[0], parts[1], parts[2]
-
-    if len(parts) == 2:
-        return parts[0], parts[1], None
-
-    return parts[0], None, None
+from stubtools.core.view_classes import VIEW_CLASS_SETTINGS, IGNORE_MODULES
 
 
 class Command(AppCommand):
@@ -132,8 +32,12 @@ class Command(AppCommand):
             raise CommandError('Need to pass App.View names')
 
         # batch process app views
-        for app_view in args:
-            self.process(app_view, *args, **kwargs)
+        try:
+            for app_view in args:
+                self.process(app_view, *args, **kwargs)
+        except KeyboardInterrupt:
+            print("\nExiting...")
+            return
 
 
     def process(self, app_view, *args, **kwargs):
@@ -141,7 +45,7 @@ class Command(AppCommand):
         class_based_views_available = version_check("gte", "1.3.0")        # SHOULD DEFAULT FOR 1.3+ TO True.  NEED ATTR IN settings.py TO CONFIG SET TO FALSE.
 
         # SPLIT THE APP, VIEW AND VIEW_CLASS
-        app, view, view_class = parse_app_view(app_view)
+        app, view, view_class = parse_app_input(app_view)
 
         view_file = "%s/views.py" % app
 
@@ -157,7 +61,6 @@ class Command(AppCommand):
         # Update the VIEW_CLASS_SETTINGS module value
         for cl in view_classes:
             class_name = cl.__name__    # Get the short name for the class
-
 
             if class_name not in VIEW_CLASS_SETTINGS: 
                 VIEW_CLASS_SETTINGS[class_name] = {} 
@@ -176,25 +79,37 @@ class Command(AppCommand):
 
         view_class_module = VIEW_CLASS_SETTINGS[view_class]['module']
 
+        attr_ctx = {'app_label': app, 'view_name':view_name}
+
         # Ask the Queries to build the attribute values
         for query in VIEW_CLASS_SETTINGS[view_class].get("queries", []):
             default = query.get("default", None)
+            ignore_default = query.get("ignore_default", False)
+
+            key = query['key']
+            # print("KEY: %s" % key)
 
             if default:
-                attr_ctx = {'app': app, 'view_name':view_name}
                 attr_ctx.update(render_ctx['attributes'])
                 print(attr_ctx)
-                attr_ctx['model'] = "_".join(split_camel_case(attr_ctx['model'])).lower()
+                attr_ctx['model_name'] = "_".join(split_camel_case(attr_ctx['model'])).lower()
                 default = default % attr_ctx
 
             answer = ask_question(query["question"], default=default, required=query.get("required", False) )
+
+            if ignore_default and answer == default:   # If the default is meant to be ignored...
+                continue
 
             value_type = query.get('attr_type', None)
 
             if value_type == "str":
                 answer = '\"%s\"' % answer
 
-            render_ctx['attributes'][query['key']] = answer 
+            render_ctx['attributes'][key] = answer
+            # print("ANSWER: %s" % answer)
+
+            # if key in attr_ctx:            # This way if an attribute value is updated, it's reapplied to the question context
+            #     attr_ctx[key] = answer
 
         page_append = VIEW_CLASS_SETTINGS[view_class].get("append", "View")     # Given the view type, there is a common convention for appending to the name of the "page's" View's Class
 
@@ -306,17 +221,17 @@ class Command(AppCommand):
         render_ctx['pre_view'] = "\n".join(data_lines[view_start_index:view_end_index])
         render_ctx['post_view'] = "\n".join(data_lines[view_end_index:])
 
-        # PRE-IMPORT RESULTS
-        print( horizontal_rule() )
-        print("PRE-IMPORT:")
-        print(render_ctx['pre_import'])
-        print( horizontal_rule() )
-        print("PRE-VIEW:")
-        print(render_ctx['pre_view'])
-        print( horizontal_rule() )
-        print("POST-VIEW:")
-        print(render_ctx['post_view'])
-        print( horizontal_rule() )
+        # # PRE-IMPORT RESULTS
+        # print( horizontal_rule() )
+        # print("PRE-IMPORT:")
+        # print(render_ctx['pre_import'])
+        # print( horizontal_rule() )
+        # print("PRE-VIEW:")
+        # print(render_ctx['pre_view'])
+        # print( horizontal_rule() )
+        # print("POST-VIEW:")
+        # print(render_ctx['post_view'])
+        # print( horizontal_rule() )
 
         # 5) Assemble the file
 
@@ -329,7 +244,7 @@ class Command(AppCommand):
         template = env.get_template('view.py.j2')
 
         result = template.render(**render_ctx)
-        print( horizontal_rule() )
+        # print( horizontal_rule() )
         print("RESULT:")
         print(result)
 

@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-10-31 14:00:21
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-05 11:51:50
+# @Last Modified time: 2018-11-05 13:35:43
 # --------------------------------------------
 
 def horizontal_rule(div_char="-", terminal_width=80):
@@ -20,7 +20,7 @@ def ask_question(question, default=None, required=False):
         prompt = ""
 
     if default:
-        prompt += "%s (Default: %s) > " % (question, default)
+        prompt += "%s [%s] > " % (question, default)
         result = input(prompt) or default
     else:
         prompt += "%s > " % question
@@ -29,7 +29,7 @@ def ask_question(question, default=None, required=False):
     if required and not result:
         result = ask_question(question, default=default, required=required)
 
-    print(result)
+    # print(result)
     return result
 
 

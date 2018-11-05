@@ -8,6 +8,16 @@ import django
 name_split_regex = re.compile("([A-Z][a-z]+)")
 
 
+def parse_app_input(app_view, expected_parts=3):
+    parts = app_view.split(".")  # split the app and views
+    part_len = len(parts)
+
+    for i in range(part_len, expected_parts):
+        parts.append(None)
+
+    return parts[:expected_parts]
+
+
 def underscore_camel_case(string):
     """Adds spaces to a camel case string.  Failure to space out string returns the original string.
     >>> space_out_camel_case('DMLSServicesOtherBSTextLLC')
