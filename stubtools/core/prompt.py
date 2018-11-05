@@ -3,14 +3,18 @@
 # @Author: Grant Viklund
 # @Date:   2018-10-31 14:00:21
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-01 17:41:52
+# @Last Modified time: 2018-11-05 10:51:29
 # --------------------------------------------
+
+def horizontal_rule(div_char="-", terminal_width=80):
+    return "#%s" % (div_char * (terminal_width - 1))
 
 def selection_list(sel_list, prompt="Make a section", title="Selection", terminal_width=80, exitable=True, as_string=False):
 
     word_width = 1
     margin = 6
     # count = len(sel_list)     # Can be used later for validation (i.e. selection out of range)
+    hr = horizontal_rule()
 
     for sel in sel_list:
         ln = len(sel)
@@ -25,7 +29,8 @@ def selection_list(sel_list, prompt="Make a section", title="Selection", termina
     old_row = 0
     output = ""
 
-    print( "\n#%s" % ("-" * (terminal_width - 1)))
+    # print( "\n#%s" % ("-" * (terminal_width - 1)))
+    print( "\n%s" % hr )
     print( "# %s\n" % title)
 
     for c, sel in enumerate(sel_list):

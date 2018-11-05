@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-03 21:39:47
+# @Last Modified time: 2018-11-05 11:19:59
 #--------------------------------------------
 
 import re, os.path
@@ -16,7 +16,8 @@ from django.views.generic.base import View
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case
-from stubtools.core.prompt import selection_list
+from stubtools.core.prompt import selection_list, horizontal_rule
+from stubtools.core.regex import FUNCTION_OR_CLASS_REGEX, IMPORT_REGEX
 
 
 VIEW_CLASS_SETTINGS = {
@@ -196,7 +197,7 @@ class Command(AppCommand):
 
         view_class_module = VIEW_CLASS_SETTINGS[view_class]['module']
 
-        # Ask the Queries
+        # Ask the Queries to build the attribute values
         for query in VIEW_CLASS_SETTINGS[view_class].get("queries", []):
             default = query.get("default", None)
 
@@ -238,18 +239,97 @@ class Command(AppCommand):
 
         # view_import_line_regex = re.compile(r"^from " + VIEW_CLASS_SETTINGS[view_class]['module'] + " import (.+)", re.MULTILINE)
 
-        # if os.path.isfile( view_file ):
-        #     try:
-        #         FILE = open( view_file, "r")
-        #         data = FILE.read()
-        #         FILE.close()
+        if os.path.isfile( view_file ):
+            FILE = open( view_file, "r")
+            data = FILE.read()
+            FILE.close()
 
-        #     except IOError as e:
-        #         pass                    # May need to add something here to handle a file locking issue
+        # Slice and Dice!
+        data_lines = data.split("\n")
+        line_count = len(data_lines)
 
-        # # Slice and Dice the admin.py here
-        # data_lines = data.split("\n")
-        # line_count = len(data_lines)
+        # Establish the Segments
+        import_start_index = 0
+        import_end_index = 0
+        import_line = None
+        view_start_line = line_count
+        view_end_line = line_count
+
+        # Segment Values
+        pre_import = None
+        pre_view = None
+        post_view = None
+
+        # 1) Find where Classes and Functions start
+
+        for c, line in enumerate(data_lines):
+            if FUNCTION_OR_CLASS_REGEX.findall( line ):
+                view_start_line = c       # Make note of the line number
+                break
+
+        # print("VIEWS START ON INDEX: %d" % view_start_line)
+
+
+        # 2) Check imports in the section before the Classes and Functions
+
+        # print(data_lines[:view_start_line])
+        # print("IMPORT ENDS ON INDEX: %d" % view_start_line)
+        # print("LOOKING FOR MODULE: %s" % view_class_module)
+        pattern = "^from %s import (.+)" % view_class_module
+        # pettern = pattern.encode('string-escape')
+        # print("PATTERN: %s" % pattern)
+        module_regex = re.compile(pattern, re.MULTILINE)
+        # modules = []
+
+        import_zone = data_lines[:view_start_line]
+
+        for c, line in enumerate(import_zone):
+            modules = module_regex.findall( line )
+
+            if modules:
+                import_line = c       # Make note of the line number
+
+        modules.append(view_class)
+
+        print(modules)
+        # print("IMPORT LINE = %s" % (import_line) )
+
+        # PULL OUT THE IMPORTED ITEMS AND REBUILD THE LINE
+        render_ctx['import_statement'] = "from %s import %s" % (view_class_module, ", ".join(modules))
+
+        if not import_line:
+
+            # If the module is not already imported, find the last import module line and add it below there
+
+            # for c, line in enumerate(import_zone):
+            #     if IMPORT_REGEX.findall( line ):
+            #         import_start_index = c       # Make note of the line number
+            #         break
+
+            if view_start_line > 0:
+                import_end_index = view_start_line - 1
+            else:
+                import_end_index = view_start_line
+
+            for c, line in enumerate(import_zone):
+                if IMPORT_REGEX.findall( line ):
+                    import_end_index = c       # Make note of the line number
+
+            print("IMPORT END = %d" % (import_end_index) )
+            import_line = import_end_index + 1
+
+
+        
+
+
+
+        # 3) Find the Last Class/Function
+
+        # 4) Build the sections
+
+        # 5) Assemble the file
+
+
 
         # # Find the View Import Line
         # for c, line in enumerate(data_lines):
@@ -260,6 +340,22 @@ class Command(AppCommand):
         #         render_ctx['views'].extend(check)   # Add the views from the same module to the list
         #         break
 
+        render_ctx['pre_import'] = "\n".join(data_lines[:import_line])
+        render_ctx['pre_view'] = "\n".join(data_lines[import_line:view_end_line])
+        render_ctx['post_view'] = "\n".join(data_lines[view_end_line:])
+
+        # PRE-IMPORT RESULTS
+        print( horizontal_rule() )
+        print("PRE-IMPORT:")
+        print(render_ctx['pre_import'])
+        print( horizontal_rule() )
+        print("PRE-VIEW:")
+        print(render_ctx['pre_view'])
+        print( horizontal_rule() )
+        print("POST-VIEW:")
+        print(render_ctx['post_view'])
+        print( horizontal_rule() )
+
         #######################
         # RENDER THE TEMPLATES
         #######################
@@ -269,6 +365,8 @@ class Command(AppCommand):
         template = env.get_template('view.py.j2')
 
         result = template.render(**render_ctx)
+        print( horizontal_rule() )
+        print("RESULT:")
         print(result)
 
 

@@ -1,5 +1,5 @@
 {{ pre_import }}
-{# from django.views.generic import {% for module in models %}{{ module }}{{ ", " if not loop.last }}{% endfor %} #}
+{{ import_statement }}
 {% if pre_view %}
 {{ pre_view }}
 {% else %}
@@ -16,13 +16,12 @@
 ###############
 # VIEWS {# Views for your app #}
 ###############{% endif %}
-
+{% if page_class %}
 class {{ page_class }}({{ view_class }}):
 	{% if description %}'''
 	{{ description }}
 	'''{% endif %}
 	{% for key, value in attributes.items() %}{{ key }} = {{ value }}
 	{% endfor %}
-
-
+{% endif %}
 {{ post_view }}
