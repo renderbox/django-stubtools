@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-06 12:18:04
+# @Last Modified time: 2018-11-06 12:24:34
 #--------------------------------------------
 
 import re, os.path
@@ -16,62 +16,16 @@ from django.views.generic.base import View
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case, parse_app_input
+from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case, parse_app_input, get_file_lines
 from stubtools.core.prompt import ask_question, selection_list, horizontal_rule
 from stubtools.core.parse import IMPORT_REGEX, get_classes_and_functions_start, get_pattern_line, get_classes_and_functions
-from stubtools.core.view_classes import VIEW_CLASS_SETTINGS, IGNORE_MODULES
-
-def get_file_lines(file_name):
-    if os.path.isfile( file_name ):
-        FILE = open( file_name, "r")
-        data_lines = FILE.readlines()
-        FILE.close()
-        return data_lines
-    return []
-
-
-# def get_pattern_line(pattern, data_lines):
-#     '''
-#     Find the first line this pattern occurs at
-#     '''
-#     module_regex = re.compile(pattern, re.MULTILINE)
-
-#     for c, line in enumerate(data_lines):
-#         modules_check = module_regex.findall( line )
-
-#         if modules_check:
-#             return c    # Record the line number and break at the first match
-
-#     return None
-
-# def get_classes_and_functions(line):
-#     parts = line.split()
-#     module_start = 1
-#     comments = None
-
-#     # Find the import point
-#     for c, part in enumerate(parts):
-#         if part == "import":
-#             module_start = c + 1
-#             break
-
-#     reassembly = str(" ".join(parts[module_start:])).split("#")
-
-#     if len(reassembly) > 1:
-#         comments = "#" + "#".join(reassembly[1:])
-
-#     modules = [x.strip() for x in reassembly[0].split(",")]
-
-#     return modules, comments
-
+from stubtools.core.view_classes import VIEW_CLASS_SETTINGS, STUBTOOLS_IGNORE_MODULES
 
 
 class Command(AppCommand):
     args = '<app.view.view_class>'
     help = 'creates a template and matching view for the given view name'
     terminal_width = 80
-    view_file = None
-
 
     def handle(self, *args, **kwargs):
         if len(args) < 1:
@@ -85,18 +39,12 @@ class Command(AppCommand):
             print("\nExiting...")
             return
 
-    def get_context(self, app_view):
+    def get_context(self, app, view, view_class):
 
         class_based_views_available = version_check("gte", "1.3.0")        # SHOULD DEFAULT FOR 1.3+ TO True.  NEED ATTR IN settings.py TO CONFIG SET TO FALSE.
 
-        # SPLIT THE APP, VIEW AND VIEW_CLASS
-        app, view, view_class = parse_app_input(app_view)
-
-        self.view_file = "%s/views.py" % app
-        self.url_file = "%s/urls.py" % app
-
         # Load the classes each time so they can be made to include views that were previously created
-        view_classes = get_all_subclasses(View, ignore_modules=IGNORE_MODULES)
+        view_classes = get_all_subclasses(View, ignore_modules=STUBTOOLS_IGNORE_MODULES)
 
         # Update the VIEW_CLASS_SETTINGS module value
         for cl in view_classes:
@@ -197,7 +145,13 @@ class Command(AppCommand):
 
     def process(self, app_view, *args, **kwargs):
 
-        render_ctx = self.get_context(app_view)
+        # SPLIT THE APP, VIEW AND VIEW_CLASS
+        app, view, view_class = parse_app_input(app_view)
+
+        render_ctx = self.get_context(app, view, view_class)
+
+        view_file = "%s/views.py" % app
+        url_file = "%s/urls.py" % app
 
         #######################
         # PARSE view.py
@@ -206,7 +160,7 @@ class Command(AppCommand):
         # view_import_line_regex = re.compile(r"^from " + VIEW_CLASS_SETTINGS[view_class]['module'] + " import (.+)", re.MULTILINE)
 
         # Slice and Dice!
-        data_lines = get_file_lines(self.view_file)
+        data_lines = get_file_lines(view_file)
         line_count = len(data_lines)
 
         # Establish the Segments
@@ -310,7 +264,7 @@ class Command(AppCommand):
         # ]
 
         # Slice and Dice!
-        data_lines = get_file_lines(self.url_file)
+        data_lines = get_file_lines(url_file)
         line_count = len(data_lines)
 
         print("CONTEXT:")

@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 14:09:40
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-06 12:13:54
+# @Last Modified time: 2018-11-06 12:19:54
 # --------------------------------------------
 
 VIEW_CLASS_SETTINGS = {
@@ -132,5 +132,4 @@ VIEW_CLASS_SETTINGS = {
     "RedirectView": {}
 }
 
-
-IGNORE_MODULES = ["django.views.i18n", "django.contrib.admin.views"]
+STUBTOOLS_IGNORE_MODULES = ["django.views.i18n", "django.contrib.admin.views"]

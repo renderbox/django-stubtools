@@ -8,6 +8,15 @@ import django
 name_split_regex = re.compile("([A-Z][a-z]+)")
 
 
+def get_file_lines(file_name):
+    if os.path.isfile( file_name ):
+        FILE = open( file_name, "r")
+        data_lines = FILE.readlines()
+        FILE.close()
+        return data_lines
+    return []
+
+
 def parse_app_input(app_view, expected_parts=3):
     parts = app_view.split(".")  # split the app and views
     part_len = len(parts)
