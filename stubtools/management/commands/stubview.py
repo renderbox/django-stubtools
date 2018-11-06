@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-06 12:08:51
+# @Last Modified time: 2018-11-06 12:18:04
 #--------------------------------------------
 
 import re, os.path
@@ -95,12 +95,6 @@ class Command(AppCommand):
         self.view_file = "%s/views.py" % app
         self.url_file = "%s/urls.py" % app
 
-        if not view:
-            view = input("What is the name of the view? > ")
-
-        # MAKE SURE AT LEAST THE FIRST LETTER OF THE VIEW NAME IS CAPITALIZED
-        view = view[0].upper() + view[1:]
-
         # Load the classes each time so they can be made to include views that were previously created
         view_classes = get_all_subclasses(View, ignore_modules=IGNORE_MODULES)
 
@@ -119,6 +113,13 @@ class Command(AppCommand):
         # PICK THE VIEW CLASS TO USE BASED ON A LIST OF AVAILABLE CLASSES IF NOT SET IN THE COMMAND LINE
         if not view_class:
             view_class = selection_list(classes, as_string=True)
+
+        if not view:
+            default = "My%s" % view_class
+            view = input("What is the name of the view? [%s] > " % default) or default
+
+        # MAKE SURE AT LEAST THE FIRST LETTER OF THE VIEW NAME IS CAPITALIZED
+        view = view[0].upper() + view[1:]
 
         view_name = "_".join(split_camel_case(view)).lower()
 

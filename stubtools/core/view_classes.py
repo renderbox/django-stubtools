@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 14:09:40
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-06 11:35:50
+# @Last Modified time: 2018-11-06 12:13:54
 # --------------------------------------------
 
 VIEW_CLASS_SETTINGS = {
@@ -50,6 +50,7 @@ VIEW_CLASS_SETTINGS = {
                 "question": "What do you want the Resource Name to be?",
                 "key": "resource_name",
                 "default": "%(app_label)s-%(view_name)s",
+                "as_atttr": False,
             },
             {
                 "question": "What do you want the Resource Pattern to be in the view?",
