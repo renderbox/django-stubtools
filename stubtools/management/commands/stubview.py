@@ -3,12 +3,13 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-05 14:28:00
+# @Last Modified time: 2018-11-06 10:33:26
 #--------------------------------------------
 
 import re, os.path
-import ast
+# import ast
 import django
+import pprint
 
 from django.core.management.base import AppCommand, CommandError
 from django.views.generic.base import View
@@ -20,11 +21,20 @@ from stubtools.core.prompt import ask_question, selection_list, horizontal_rule
 from stubtools.core.regex import FUNCTION_OR_CLASS_REGEX, IMPORT_REGEX
 from stubtools.core.view_classes import VIEW_CLASS_SETTINGS, IGNORE_MODULES
 
+def get_file_lines(file_name):
+    if os.path.isfile( file_name ):
+        FILE = open( file_name, "r")
+        data_lines = FILE.readlines()
+        FILE.close()
+        return data_lines
+    return []
+
 
 class Command(AppCommand):
     args = '<app.view.view_class>'
     help = 'creates a template and matching view for the given view name'
     terminal_width = 80
+    view_file = None
 
 
     def handle(self, *args, **kwargs):
@@ -39,15 +49,15 @@ class Command(AppCommand):
             print("\nExiting...")
             return
 
-
-    def process(self, app_view, *args, **kwargs):
+    def get_context(self, app_view):
 
         class_based_views_available = version_check("gte", "1.3.0")        # SHOULD DEFAULT FOR 1.3+ TO True.  NEED ATTR IN settings.py TO CONFIG SET TO FALSE.
 
         # SPLIT THE APP, VIEW AND VIEW_CLASS
         app, view, view_class = parse_app_input(app_view)
 
-        view_file = "%s/views.py" % app
+        self.view_file = "%s/views.py" % app
+        self.url_file = "%s/urls.py" % app
 
         if not view:
             view = input("What is the name of the view? > ")
@@ -75,11 +85,15 @@ class Command(AppCommand):
 
         view_name = "_".join(split_camel_case(view)).lower()
 
-        render_ctx = {'app':app, 'view':view, 'view_name':view_name, 'views':[],'view_class':view_class, 'attributes':{} }
+        render_ctx = {'app':app, 'view':view, 'view_name':view_name, 'views':[],
+                        'view_class':view_class, 'attributes':{}, 
+                        'view_class_module': VIEW_CLASS_SETTINGS[view_class]['module'] }
 
-        view_class_module = VIEW_CLASS_SETTINGS[view_class]['module']
+        # self.view_class_module = VIEW_CLASS_SETTINGS[view_class]['module']
 
         attr_ctx = {'app_label': app, 'view_name':view_name}
+
+        key_remove_attr_list = []   # This is so defaults are available while the questioning is going on so defaults can be applied to other attrs.
 
         # Ask the Queries to build the attribute values
         for query in VIEW_CLASS_SETTINGS[view_class].get("queries", []):
@@ -87,29 +101,40 @@ class Command(AppCommand):
             ignore_default = query.get("ignore_default", False)
 
             key = query['key']
-            # print("KEY: %s" % key)
 
-            if default:
-                attr_ctx.update(render_ctx['attributes'])
-                print(attr_ctx)
+            # Update the attribute context with the results of render_ctx['attributes'] before creating the default value
+            attr_ctx.update(render_ctx['attributes'])
+            if 'model' in attr_ctx:
                 attr_ctx['model_name'] = "_".join(split_camel_case(attr_ctx['model'])).lower()
+
+            # Create the default value so it can be used in the query prompt
+            if default:
                 default = default % attr_ctx
 
+            # print(attr_ctx)
             answer = ask_question(query["question"], default=default, required=query.get("required", False) )
 
-            if ignore_default and answer == default:   # If the default is meant to be ignored...
-                continue
+            # If the result is seto to 'ignore_default' it will be poped out of the context when queries are done.
+            # In other words, the value will be kept only if it's not the default after the queries are over.
+            if ignore_default and answer == default:
+                key_remove_attr_list.append(key)
 
             value_type = query.get('attr_type', None)
 
             if value_type == "str":
                 answer = '\"%s\"' % answer
 
-            render_ctx['attributes'][key] = answer
+            # This way if an attribute value is updated, it's reapplied to the question context
+            if query.get('as_atttr', True):
+                render_ctx['attributes'][key] = answer
+            else:
+                render_ctx[key] = answer
             # print("ANSWER: %s" % answer)
 
-            # if key in attr_ctx:            # This way if an attribute value is updated, it's reapplied to the question context
-            #     attr_ctx[key] = answer
+        for key in key_remove_attr_list:
+            del render_ctx['attributes'][key]
+
+        # print(render_ctx['attributes'])
 
         page_append = VIEW_CLASS_SETTINGS[view_class].get("append", "View")     # Given the view type, there is a common convention for appending to the name of the "page's" View's Class
 
@@ -127,8 +152,14 @@ class Command(AppCommand):
         render_ctx['page'] = "_".join(name_parts).lower()   # Name used in the URL and template
         render_ctx['page_name'] = ' '.join(name_parts)      # Human Friendly Format
 
-        # Setting up for attributes to use different types
-        render_ctx['resource'] = {'method':"path"}  # resource is used mainly in the URL template
+        render_ctx['use_path_method'] = version_check("gte", "2.0.0")
+        render_ctx['class_based_view'] = True
+
+        return render_ctx
+
+    def process(self, app_view, *args, **kwargs):
+
+        render_ctx = self.get_context(app_view)
 
         #######################
         # PARSE view.py
@@ -136,13 +167,8 @@ class Command(AppCommand):
 
         # view_import_line_regex = re.compile(r"^from " + VIEW_CLASS_SETTINGS[view_class]['module'] + " import (.+)", re.MULTILINE)
 
-        if os.path.isfile( view_file ):
-            FILE = open( view_file, "r")
-            data = FILE.read()
-            FILE.close()
-
         # Slice and Dice!
-        data_lines = data.split("\n")
+        data_lines = get_file_lines(self.view_file)
         line_count = len(data_lines)
 
         # Establish the Segments
@@ -164,7 +190,7 @@ class Command(AppCommand):
                 view_start_index = c       # Make note of the line number
                 break
 
-        pattern = "^from %s import (.+)" % view_class_module
+        pattern = "^from %(view_class_module)s import (.+)" % render_ctx
         module_regex = re.compile(pattern, re.MULTILINE)
 
         import_zone = data_lines[:view_start_index]
@@ -178,12 +204,12 @@ class Command(AppCommand):
                 modules.extend(modules_check)
                 break
 
-        if view_class not in modules:
-            modules.append(view_class)
+        if render_ctx['view_class'] not in modules:
+            modules.append(render_ctx['view_class'])
         modules.sort()
 
         # PULL OUT THE IMPORTED ITEMS AND REBUILD THE LINE
-        render_ctx['import_statement'] = "from %s import %s" % (view_class_module, ", ".join(modules))
+        render_ctx['import_statement'] = "from %s import %s" % (render_ctx['view_class_module'], ", ".join(modules))
 
         if not import_line:
 
@@ -217,9 +243,12 @@ class Command(AppCommand):
 
         # 4) Build the sections
 
-        render_ctx['pre_import'] = "\n".join(data_lines[:import_line])
-        render_ctx['pre_view'] = "\n".join(data_lines[view_start_index:view_end_index])
-        render_ctx['post_view'] = "\n".join(data_lines[view_end_index:])
+        render_ctx['view_pre_import'] = "".join(data_lines[:import_line])
+        render_ctx['view_pre_view'] = "".join(data_lines[view_start_index:view_end_index])
+        render_ctx['view_post_view'] = "".join(data_lines[view_end_index:])
+
+        pp = pprint.PrettyPrinter(indent=4)
+
 
         # # PRE-IMPORT RESULTS
         # print( horizontal_rule() )
@@ -232,6 +261,33 @@ class Command(AppCommand):
         # print("POST-VIEW:")
         # print(render_ctx['post_view'])
         # print( horizontal_rule() )
+
+
+        #######################
+        # PARSE urls.py
+        #######################
+
+        # from django.conf.urls import url
+        # from . import views
+
+        # urlpatterns = [
+        #     url(r'^profile/$', views.ProfileView.as_view(), name='poop-profile'),
+        # ]
+
+        # Slice and Dice!
+        data_lines = get_file_lines(self.url_file)
+        line_count = len(data_lines)
+
+        # url_render_ctx['use_path_method'] = version_check("gte", "2.0.0")
+        # url_render_ctx['class_based_view'] = True
+
+        # url_render_ctx['resource'] = {'path':"", 'kwargs':{} }
+        # url_render_ctx['resource_name'] = render_ctx['attributes']['resource_name']
+        # url_render_ctx['extra_args'] = {'name':render_ctx['attributes']['resource_name']}
+
+
+        print("CONTEXT:")
+        pp.pprint(render_ctx)
 
         # 5) Assemble the file
 
@@ -424,10 +480,10 @@ class Command(AppCommand):
         #     FILE.close()
 
 
-    def print_break(self, lable):
-        count = 20
-        self.stdout.write( "\n" + "*" * count + "\n" )
-        self.stdout.write( "%s\n" % lable )
-        self.stdout.write( "*" * count + "\n" )
+    # def print_break(self, lable):
+    #     count = 20
+    #     self.stdout.write( "\n" + "*" * count + "\n" )
+    #     self.stdout.write( "%s\n" % lable )
+    #     self.stdout.write( "*" * count + "\n" )
 
 

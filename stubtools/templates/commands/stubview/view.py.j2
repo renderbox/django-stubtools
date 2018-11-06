@@ -1,28 +1,28 @@
-{{ pre_import }}
-{{ import_statement }}{% if pre_view %}
-{{ pre_view }}
+{{ view_pre_import }}
+{{ view_import_statement }}{% if view_pre_view %}
+{{ view_pre_view }}
 {% else %}
 
 
-###############
-# BASE VIEWS - Any base level views you will inherit in your views below
-###############
+#--------------
+# BASE VIEWS - Any base level views you will inherit in your views
+#--------------
 
 
-###############
+#--------------
 # MIXINS - Local Mixins that you create
-###############
+#--------------
 
 
-###############
+#--------------
 # VIEWS - Views for your app
-###############{% endif %}
+#--------------{% endif %}
 {% if page_class %}
 class {{ page_class }}({{ view_class }}):{% if description %}
-	'''
-	{{ description }}
-	'''{% endif %}
+    '''
+    {{ description }}
+    '''{% endif %}
     {% for key, value in attributes.items() %}{{ key }} = {{ value }}
     {% endfor %}
 {% endif %}
-{{ post_view }}
+{{ view_post_view }}

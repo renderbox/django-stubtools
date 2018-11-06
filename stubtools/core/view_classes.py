@@ -3,17 +3,31 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 14:09:40
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-05 14:27:09
+# @Last Modified time: 2018-11-06 10:26:53
 # --------------------------------------------
 
 VIEW_CLASS_SETTINGS = {
     "TemplateView": {
         "queries": [
             {
-                "question": "Any comment you want to add to the view?",
-                "key": "comment",
-                'required': False
-            }
+                "question": "Which template to use?",
+                "key": "template_name",
+                "default": "%(app_label)s/%(view_name)s.html",
+                'attr_type':"str",
+                'required': True
+            },
+            {
+                "question": "What do you want the Resource Name to be?",
+                "key": "resource_name",
+                "default": "%(app_label)s-%(view_name)s",
+                "as_atttr": False,
+            },
+            {
+                "question": "What do you want the Resource Pattern to be in the view?",
+                "key": "url_pattern",
+                "default": "%(view_name)s/",
+                "as_atttr": False,
+            },
         ],
         "append": "View"
     },
@@ -27,10 +41,21 @@ VIEW_CLASS_SETTINGS = {
             {
                 "question": "Which template to use?",
                 "key": "template_name",
-                "default": "%(app_label)s/%(model)s_list.html",
+                "default": "%(app_label)s/%(model_name)s_list.html",
                 'attr_type':"str",
                 'required': True
-            }
+            },
+            {
+                "question": "What do you want the Resource Name to be?",
+                "key": "resource_name",
+                "default": "%(app_label)s-%(view_name)s",
+            },
+            {
+                "question": "What do you want the Resource Pattern to be in the view?",
+                "key": "url_pattern",
+                "default": "%(view_name)s/%(model_name)s/list/",
+                "as_atttr": False,
+            },
         ],
         "append": "ListView"
     },
@@ -67,7 +92,18 @@ VIEW_CLASS_SETTINGS = {
                 "default": "%(app_label)s/%(model_name)s_detail.html",
                 'attr_type':"str",
                 'required': True
-            }
+            },
+            {
+                "question": "What do you want the Resource Name to be?",
+                "key": "resource_name",
+                "default": "%(app_label)s-%(view_name)s",
+            },
+            {
+                "question": "What do you want the Resource Pattern to be in the view?",
+                "key": "url_pattern",
+                "default": "%(view_name)s/<slug:%(slug_url_kwarg)s>/details/",
+                "as_atttr": False,
+            },
         ],
         "append": "DetailView"
     },

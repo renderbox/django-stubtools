@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-10-31 14:00:21
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-05 13:35:43
+# @Last Modified time: 2018-11-05 15:42:54
 # --------------------------------------------
 
 def horizontal_rule(div_char="-", terminal_width=80):
@@ -71,8 +71,14 @@ def selection_list(sel_list, prompt="Make a section", title="Selection", termina
     if exitable:
         print( "\n 0) Exit\n")
 
-    # Make the selection
-    selection = int( input(prompt + " > ") )
+    try:
+        # Make the selection
+        selection = int( input(prompt + " > ") )
+    except ValueError:
+        invalid_sel_prompt = "Sorry, Invalid Selection"
+        if not prompt.startswith(invalid_sel_prompt):
+            prompt = invalid_sel_prompt + "\n" + prompt
+        selection = selection_list(sel_list, prompt=prompt, title=title, terminal_width=terminal_width, exitable=exitable, as_string=False)
 
     if selection == 0:
         return None
