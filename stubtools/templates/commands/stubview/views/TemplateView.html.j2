@@ -1,0 +1,9 @@
+{% extends "page.html.j2" %}
+{% block content %}
+	<div class="row">
+		<div class="col-md-12">
+			<h2>{{ page_name }}, Stub Page</h2>
+			<a href="{% raw %}{% url{% endraw %} '{{ url }}' {% raw %}%}{% endraw %}">link</a>
+		</div>
+	</div>
+{% endblock %}

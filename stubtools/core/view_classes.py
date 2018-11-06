@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 14:09:40
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-06 10:26:53
+# @Last Modified time: 2018-11-06 11:35:50
 # --------------------------------------------
 
 VIEW_CLASS_SETTINGS = {
@@ -29,7 +29,8 @@ VIEW_CLASS_SETTINGS = {
                 "as_atttr": False,
             },
         ],
-        "append": "View"
+        "append": "View",
+        "module": "django.views.generic"
     },
     "ListView": {
         "queries": [

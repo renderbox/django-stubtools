@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-06 10:33:26
+# @Last Modified time: 2018-11-06 12:08:51
 #--------------------------------------------
 
 import re, os.path
@@ -18,7 +18,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case, parse_app_input
 from stubtools.core.prompt import ask_question, selection_list, horizontal_rule
-from stubtools.core.regex import FUNCTION_OR_CLASS_REGEX, IMPORT_REGEX
+from stubtools.core.parse import IMPORT_REGEX, get_classes_and_functions_start, get_pattern_line, get_classes_and_functions
 from stubtools.core.view_classes import VIEW_CLASS_SETTINGS, IGNORE_MODULES
 
 def get_file_lines(file_name):
@@ -28,6 +28,42 @@ def get_file_lines(file_name):
         FILE.close()
         return data_lines
     return []
+
+
+# def get_pattern_line(pattern, data_lines):
+#     '''
+#     Find the first line this pattern occurs at
+#     '''
+#     module_regex = re.compile(pattern, re.MULTILINE)
+
+#     for c, line in enumerate(data_lines):
+#         modules_check = module_regex.findall( line )
+
+#         if modules_check:
+#             return c    # Record the line number and break at the first match
+
+#     return None
+
+# def get_classes_and_functions(line):
+#     parts = line.split()
+#     module_start = 1
+#     comments = None
+
+#     # Find the import point
+#     for c, part in enumerate(parts):
+#         if part == "import":
+#             module_start = c + 1
+#             break
+
+#     reassembly = str(" ".join(parts[module_start:])).split("#")
+
+#     if len(reassembly) > 1:
+#         comments = "#" + "#".join(reassembly[1:])
+
+#     modules = [x.strip() for x in reassembly[0].split(",")]
+
+#     return modules, comments
+
 
 
 class Command(AppCommand):
@@ -75,7 +111,8 @@ class Command(AppCommand):
             if class_name not in VIEW_CLASS_SETTINGS: 
                 VIEW_CLASS_SETTINGS[class_name] = {} 
 
-            VIEW_CLASS_SETTINGS[class_name]['module'] = cl.__module__   # Set the module to the full import path
+            if not 'module' in VIEW_CLASS_SETTINGS[class_name]:               # Only if not specified already in the settings
+                VIEW_CLASS_SETTINGS[class_name]['module'] = cl.__module__   # Set the module to the full import path
 
         classes = list(VIEW_CLASS_SETTINGS.keys())
 
@@ -175,8 +212,8 @@ class Command(AppCommand):
         import_start_index = 0
         import_end_index = 0
         import_line = None
-        view_start_index = line_count
-        view_end_index = line_count
+        class_func_start = line_count
+        class_func_end = line_count
 
         # Segment Values
         pre_import = None
@@ -185,47 +222,44 @@ class Command(AppCommand):
 
         # 1) Find where Classes and Functions start
 
-        for c, line in enumerate(data_lines):
-            if FUNCTION_OR_CLASS_REGEX.findall( line ):
-                view_start_index = c       # Make note of the line number
-                break
+        class_func_start = get_classes_and_functions_start(data_lines)     # Figure out where to search up to
 
-        pattern = "^from %(view_class_module)s import (.+)" % render_ctx
-        module_regex = re.compile(pattern, re.MULTILINE)
-
-        import_zone = data_lines[:view_start_index]
         modules = []
 
-        for c, line in enumerate(import_zone):
-            modules_check = module_regex.findall( line )
+        import_line = get_pattern_line("^from %(view_class_module)s import (.+)" % render_ctx, data_lines[:class_func_start])  # Returns the index value of where the 
+        
+        comments = ""
 
-            if modules_check:
-                import_line = c             # Record the line number and break at the first match
-                modules.extend(modules_check)
-                break
+        if import_line:
+            modules, comments = get_classes_and_functions(data_lines[import_line])
 
-        if render_ctx['view_class'] not in modules:
-            modules.append(render_ctx['view_class'])
-        modules.sort()
+        modules.append(render_ctx['view_class'])
+        modules = list(set(modules))
+        modules.sort()      # Cleans up the import to be alphabetical
 
-        # PULL OUT THE IMPORTED ITEMS AND REBUILD THE LINE
-        render_ctx['import_statement'] = "from %s import %s" % (render_ctx['view_class_module'], ", ".join(modules))
+        render_ctx['view_import_statement'] = "from %s import %s" % (render_ctx['view_class_module'], ", ".join(modules))
+
+        if comments:
+            render_ctx['view_import_statement'] += " #%s" % comments
+
+
+
 
         if not import_line:
 
-            if view_start_index > 0:
-                import_end_index = view_start_index - 1
+            if class_func_start > 0:
+                import_end_index = class_func_start - 1
             else:
-                import_end_index = view_start_index
+                import_end_index = class_func_start
 
-            for c, line in enumerate(import_zone):
+            for c, line in enumerate(data_lines[:class_func_start]):
                 if IMPORT_REGEX.findall( line ):
                     import_end_index = c       # Make note of the line number
 
             import_line = import_end_index + 1
-            view_start_index = import_end_index + 1
+            class_func_start = import_end_index + 1
         else:
-            view_start_index = import_line + 1
+            class_func_start = import_line + 1
 
         # 3) Find where the post_view starts
 
@@ -238,14 +272,14 @@ class Command(AppCommand):
 
             if cleaned_line:
                 if not cleaned_line.startswith("#"):
-                    view_end_index = c + 1
+                    class_func_end = c + 1
                     break
 
         # 4) Build the sections
 
         render_ctx['view_pre_import'] = "".join(data_lines[:import_line])
-        render_ctx['view_pre_view'] = "".join(data_lines[view_start_index:view_end_index])
-        render_ctx['view_post_view'] = "".join(data_lines[view_end_index:])
+        render_ctx['view_pre_view'] = "".join(data_lines[class_func_start:class_func_end])
+        render_ctx['view_post_view'] = "".join(data_lines[class_func_end:])
 
         pp = pprint.PrettyPrinter(indent=4)
 
@@ -277,14 +311,6 @@ class Command(AppCommand):
         # Slice and Dice!
         data_lines = get_file_lines(self.url_file)
         line_count = len(data_lines)
-
-        # url_render_ctx['use_path_method'] = version_check("gte", "2.0.0")
-        # url_render_ctx['class_based_view'] = True
-
-        # url_render_ctx['resource'] = {'path':"", 'kwargs':{} }
-        # url_render_ctx['resource_name'] = render_ctx['attributes']['resource_name']
-        # url_render_ctx['extra_args'] = {'name':render_ctx['attributes']['resource_name']}
-
 
         print("CONTEXT:")
         pp.pprint(render_ctx)
