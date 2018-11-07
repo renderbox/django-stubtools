@@ -1,8 +1,8 @@
 {{ pre_import }}
 {{ import_statement }}{# Add the import line only if it's missing #}
 {{ pre_urls }}{# The space inbetween the import line and the URLs #}
-urlpatterns = [
-{{ existing_patterns }}
+urlpatterns = [{% for existing_pattern in existing_patterns %}
+{{ existing_pattern }}{% endfor %}
     path({{ resource.path }}, views.{{ view }}{% if class_based_view %}.as_view(){% endif %}, name='{{ resource_name }}'),
 ]
 {{ post_urls }}

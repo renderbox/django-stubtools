@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-06 12:24:34
+# @Last Modified time: 2018-11-07 11:37:16
 #--------------------------------------------
 
 import re, os.path
@@ -18,7 +18,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case, parse_app_input, get_file_lines
 from stubtools.core.prompt import ask_question, selection_list, horizontal_rule
-from stubtools.core.parse import IMPORT_REGEX, get_classes_and_functions_start, get_pattern_line, get_classes_and_functions
+from stubtools.core.parse import IMPORT_REGEX, get_classes_and_functions_start, get_pattern_line, get_all_pattern_lines, get_classes_and_functions
 from stubtools.core.view_classes import VIEW_CLASS_SETTINGS, STUBTOOLS_IGNORE_MODULES
 
 
@@ -239,19 +239,6 @@ class Command(AppCommand):
         pp = pprint.PrettyPrinter(indent=4)
 
 
-        # # PRE-IMPORT RESULTS
-        # print( horizontal_rule() )
-        # print("PRE-IMPORT:")
-        # print(render_ctx['pre_import'])
-        # print( horizontal_rule() )
-        # print("PRE-VIEW:")
-        # print(render_ctx['pre_view'])
-        # print( horizontal_rule() )
-        # print("POST-VIEW:")
-        # print(render_ctx['post_view'])
-        # print( horizontal_rule() )
-
-
         #######################
         # PARSE urls.py
         #######################
@@ -267,8 +254,20 @@ class Command(AppCommand):
         data_lines = get_file_lines(url_file)
         line_count = len(data_lines)
 
-        print("CONTEXT:")
-        pp.pprint(render_ctx)
+        url_import_line = None
+        view_import_line = None
+        
+        url_pattern_start = get_pattern_line("(urlpatterns =)", data_lines, default=0)
+        url_pattern_end = get_pattern_line("]", data_lines[url_pattern_start:], default=0) + url_pattern_start    # Look for the ']' after the urlpatterns
+        url_pattern_lines = get_all_pattern_lines(r"(url\(|path\(|re_path\()", data_lines)
+
+        print("URL PATTERN START: %d" % url_pattern_start)
+        print("URL PATTERN END: %d" % url_pattern_end)
+        print("URL PATTERNS:")
+        for p in url_pattern_lines:
+            print("    %s" % p)
+
+        # Get the import lines
 
         # 5) Assemble the file
 
@@ -276,14 +275,19 @@ class Command(AppCommand):
         # RENDER THE TEMPLATES
         #######################
 
+        # print( horizontal_rule() )
+        # print("RENDER CONTEXT:")
+        # pp.pprint(render_ctx)
+        # print( horizontal_rule() )
+
         # Start Rendering a writing files
         env = Environment( loader=PackageLoader('stubtools', 'templates/commands/stubview'), autoescape=select_autoescape(['html']) )
         template = env.get_template('view.py.j2')
 
-        result = template.render(**render_ctx)
-        # print( horizontal_rule() )
-        print("RESULT:")
-        print(result)
+        view_result = template.render(**render_ctx)
+
+        # print("views.py RESULT:")
+        # print(view_result)
 
 
 
