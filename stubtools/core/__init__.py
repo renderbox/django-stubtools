@@ -59,18 +59,6 @@ def class_name(str):
     return str[:1].upper() + str[1:]
 
 
-class StubRootCommand(AppCommand):
-    """This checks to make sure there is a Project Root path in the Config file"""
-
-    def handle(self, *args, **options):
-        try:
-            root_path = settings.BASE_DIR
-        except:
-            project_name = settings.ROOT_URLCONF.split(".")[0]
-
-            raise NoProjectPathException(project_name)
-
-
 def version_check(mode="gte", vcheck="0.0.0"):
     '''
     Checks the production version against the one passed in.  Assumes a
