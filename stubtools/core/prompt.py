@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-10-31 14:00:21
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-07 14:35:26
+# @Last Modified time: 2018-11-08 10:04:53
 # --------------------------------------------
 
 def horizontal_rule(div_char="-", terminal_width=80):
@@ -33,7 +33,39 @@ def ask_question(question, default=None, required=False):
     return result
 
 
-def selection_list(sel_list, prompt="Make a section", title="Selection", terminal_width=80, exitable=True, as_string=False):
+def ask_yes_no_question(question, default=None, required=False):
+    '''
+    This is broken out into a function so it can ask the question over until it's answered if it's required.
+    Default needs to be True, False or None.
+    '''
+    if required:
+        prompt = "Required: "
+    else:
+        prompt = ""
+
+    if default:
+        if default == True:
+            prompt += "%s [Y/n] > " % (question)
+        else:
+            prompt += "%s [y/N] > " % (question)
+
+        result = input(prompt) or default
+    else:
+        prompt += "%s [y/n] > " % question
+        result = input(prompt)
+
+    if result == "y":
+        result = True
+    elif result == "n":
+        result = False
+
+    if required and result not in [True, False]:
+        result = ask_yes_no_question(question, default=default, required=required)
+
+    return result
+
+
+def selection_list(sel_list, prompt="Make a section", title="Selection", terminal_width=80, exitable=True, as_string=False, as_index_value=True):
 
     word_width = 1
     margin = 6
@@ -69,27 +101,33 @@ def selection_list(sel_list, prompt="Make a section", title="Selection", termina
         old_row = row
 
     if exitable:
-        print( "\n 0) Exit\n")
+        print( "\n x) Exit\n")
+
+    retry = False
 
     try:
         # Make the selection
         selection = int( input(prompt + " > ") )
     except ValueError:
+        retry = True
+        pass
+
+    if retry:
         invalid_sel_prompt = "Sorry, Invalid Selection"
         if not prompt.startswith(invalid_sel_prompt):
             prompt = invalid_sel_prompt + "\n" + prompt
-        selection = selection_list(sel_list, prompt=prompt, title=title, terminal_width=terminal_width, exitable=exitable, as_string=False)
-        # print("VALUE ERROR TRY AGAIN RESULT: %d" % selection)     # todo: There is a bug where the 2nd time + choosing a selection is not returned 
+        selection = selection_list(sel_list, prompt=prompt, title=title, terminal_width=terminal_width, exitable=exitable, as_string=False, as_index_value=False)
 
-    if selection == 0:
+    if selection == "x":    # return None on exit
         return None
 
-    sel_index = selection - 1
-
     if as_string:
-        return sel_list[ sel_index ]
+        return sel_list[ selection - 1 ]    # The 'index value' will always be used if a string is returned.
 
-    return sel_index
+    if as_index_value:     
+        return selection - 1
+
+    return selection
 
 
 def multi_selection_list(sel_list, prompt="Make a section", title="Selection", terminal_width=80, exitable=True, as_string=False, selected=[]):
