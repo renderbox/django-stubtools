@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 14:09:40
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 11:08:46
+# @Last Modified time: 2018-11-08 11:18:25
 # --------------------------------------------
 
 
@@ -30,6 +30,7 @@ VIEW_CLASS_DEFAULT_SETTINGS = {
         },
     ],
     "append": "View",
+    "template": 'views/TemplateView.html.j2',
 }
 
 
@@ -60,6 +61,7 @@ VIEW_CLASS_SETTINGS = {
                 "resource_name": "%(app_label)s-%(view_name)s",
                 "resource_pattern": "%(view_name)s/%(model_name)s/list/",
             },
+        "template": 'views/ListView.html.j2',
     },
     "DetailView": {
         "queries": [

@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 11:05:01
+# @Last Modified time: 2018-11-08 11:52:17
 #--------------------------------------------
 
 import re, os.path
@@ -20,6 +20,7 @@ from stubtools.core import class_name, version_check, get_all_subclasses, split_
 from stubtools.core.prompt import ask_question, ask_yes_no_question, selection_list, horizontal_rule
 from stubtools.core.parse import IMPORT_REGEX, get_classes_and_functions_start, get_pattern_line, get_all_pattern_lines, get_classes_and_functions
 from stubtools.core.view_classes import VIEW_CLASS_DEFAULT_SETTINGS, VIEW_CLASS_SETTINGS, STUBTOOLS_IGNORE_MODULES
+from stubtools.core.file import write_file
 
 
 class Command(AppCommand):
@@ -81,9 +82,9 @@ class Command(AppCommand):
 
         key_remove_attr_list = []   # This is so defaults are available while the questioning is going on so defaults can be applied to other attrs.
 
-        # render_ctx['template_in_app'] = ask_question() == "y"
-
         render_ctx['template_in_app'] = ask_yes_no_question("Place templates at the app level?", default=True, required=True)
+
+        render_ctx['template_template'] = VIEW_CLASS_SETTINGS[view_class].get("template", VIEW_CLASS_DEFAULT_SETTINGS['template'])
 
         # Ask the Queries to build the attribute values
 
@@ -330,8 +331,6 @@ class Command(AppCommand):
             if old_url_line != None:
                 pre_url_lines.pop(old_url_line)
 
-            print("OLD IMPORT LINE: %s" % old_url_line)
-
         render_ctx['pre_urls'] = "".join(pre_url_lines)
         render_ctx['post_urls'] = "".join(data_lines[resource_pattern_end + 1:])
 
@@ -343,21 +342,20 @@ class Command(AppCommand):
         # RENDER THE TEMPLATES
         #######################
 
-        print( horizontal_rule() )
-        print("RENDER CONTEXT:")
-        pp.pprint(render_ctx)
-        print( horizontal_rule() )
+        # print( horizontal_rule() )
+        # print("RENDER CONTEXT:")
+        # pp.pprint(render_ctx)
+        # print( horizontal_rule() )
 
         # Start Rendering a writing files
+        # todo: need to figure out way to load templates using Django's settings so users can create customized override templates.
         env = Environment( loader=PackageLoader('stubtools', 'templates/commands/stubview'), autoescape=select_autoescape(['html']) )
         view_template = env.get_template('view.py.j2')
         url_template = env.get_template('urls.py.j2')
-        template_template = env.get_template('views/TemplateView.html.j2')
+        template_template = env.get_template(render_ctx['template_template'])
 
         view_result = view_template.render(**render_ctx)
-
         urls_result = url_template.render(**render_ctx)
-
         template_results = template_template.render(**render_ctx)
 
         # print("views.py RESULT:")
@@ -368,10 +366,20 @@ class Command(AppCommand):
         # print( horizontal_rule() )
         # print(urls_result)
 
-        print( horizontal_rule() )
-        print("TEMPLATE RESULT:")
-        print(template_file)
-        print( horizontal_rule() )
-        print(template_results)
+        # print( horizontal_rule() )
+        # print("TEMPLATE RESULT:")
+        # print(template_file)
+        # print( horizontal_rule() )
+        # print(template_results)
+
+        # print( horizontal_rule() )
+        # print("FILES:")
+        # print("    VIEW FILE: %s" % view_file)
+        # print("    URL FILE: %s" % url_file)
+        # print("    TEMPLATE FILE: %s" % template_file)
+
+        write_file(view_file, view_result)
+        write_file(url_file, urls_result)
+        write_file(template_file, template_results)
 
 
