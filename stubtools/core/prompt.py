@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-10-31 14:00:21
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 10:06:54
+# @Last Modified time: 2018-11-08 10:07:43
 # --------------------------------------------
 
 def horizontal_rule(div_char="-", terminal_width=80):
@@ -101,7 +101,7 @@ def selection_list(sel_list, prompt="Make a section", title="Selection", termina
         old_row = row
 
     if exitable:
-        print( "\n x) Exit\n")
+        print( "\n d) Done\n")
 
     retry = False
 
@@ -118,7 +118,7 @@ def selection_list(sel_list, prompt="Make a section", title="Selection", termina
             prompt = invalid_sel_prompt + "\n" + prompt
         selection = selection_list(sel_list, prompt=prompt, title=title, terminal_width=terminal_width, exitable=exitable, as_string=False, as_index_value=False)
 
-    if selection == "x":    # return None on exit
+    if selection == "d":    # return None on exit
         return None
 
     if as_string:
