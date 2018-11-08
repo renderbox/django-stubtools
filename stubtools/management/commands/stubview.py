@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-07 18:11:42
+# @Last Modified time: 2018-11-07 18:15:33
 #--------------------------------------------
 
 import re, os.path
@@ -343,6 +343,8 @@ class Command(AppCommand):
 
         urls_result = url_template.render(**render_ctx)
 
+        template_results = template_template.render(**render_ctx)
+
         # print("views.py RESULT:")
         # print(view_result)
 
@@ -351,7 +353,10 @@ class Command(AppCommand):
         # print( horizontal_rule() )
         # print(urls_result)
 
-
+        print( horizontal_rule() )
+        print("TEMPLATE RESULT:")
+        print( horizontal_rule() )
+        print(template_results)
 
         # # module_regex = re.compile("%s import (.+)" % view_class_module)
 

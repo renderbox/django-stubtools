@@ -1,10 +1,12 @@
-{% raw %}{% extends "page.html.j2" %}
-{% block content %}
-{% endraw %}
-	<div class="row">
-		<div class="col-md-12">
-			<h2>{{ page_name }}, Stub Page</h2>
-			<a href="{% raw %}{% url{% endraw %} '{{ url }}' {% raw %}%}{% endraw %}">link</a>
-		</div>
-	</div>
-{% raw %}{% endblock content %}{% endraw %}
+{% raw %}{% extends "base.html" %}
+{% block head_title %}{% endraw %}{{ page_name }}{% raw %}{% endblock %}
+{% block content %}{% endraw %}
+      	{% block content %}
+        <div class="row">
+          <div class="col-md-12">
+            <h2>{{ page_name }}, Default Stub Page</h2>
+            <a href="{% raw %}{% url{% endraw %} '{{ resource_name }}' {% raw %}%}{% endraw %}">link</a>
+          </div>
+        </div>
+        {% endblock %}
+{% raw %}{% endblock %}{% endraw %}
