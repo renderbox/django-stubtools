@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-10-31 14:00:21
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 10:04:53
+# @Last Modified time: 2018-11-08 10:06:54
 # --------------------------------------------
 
 def horizontal_rule(div_char="-", terminal_width=80):
@@ -185,24 +185,3 @@ def multi_selection_list(sel_list, prompt="Make a section", title="Selection", t
             selected.append(sel_list[int(i) - 1])
 
         return multi_selection_list(sel_list, prompt=prompt, title=title, terminal_width=terminal_width, exitable=exitable, as_string=as_string, selected=selected)
-
-
-"""
-from stubtools.core.prompt import selection_list, multi_selection_list
-from django.views.generic.base import View
-from stubtools.core import get_all_subclasses
-view_classes = get_all_subclasses(View, ignore_modules=["django.views.i18n", "django.contrib.admin.views"])
-VIEW_CLASS_SETTINGS = {'TemplateView':{'import':""}, 'ListView':{}, 'DetailView':{}, 'RedirectView':{}}
-
-for cl in view_classes:  
-    
-    class_name = cl.__name__  
-    if class_name not in VIEW_CLASS_SETTINGS:
-        VIEW_CLASS_SETTINGS[class_name] = {}
-    
-    VIEW_CLASS_SETTINGS[class_name]['import'] = cl
-
-classes = list(VIEW_CLASS_SETTINGS.keys())
-
-multi_selection_list(classes)
-"""
