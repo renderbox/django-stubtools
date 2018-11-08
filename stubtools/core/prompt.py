@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-10-31 14:00:21
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-05 15:42:54
+# @Last Modified time: 2018-11-07 14:35:26
 # --------------------------------------------
 
 def horizontal_rule(div_char="-", terminal_width=80):
@@ -79,6 +79,7 @@ def selection_list(sel_list, prompt="Make a section", title="Selection", termina
         if not prompt.startswith(invalid_sel_prompt):
             prompt = invalid_sel_prompt + "\n" + prompt
         selection = selection_list(sel_list, prompt=prompt, title=title, terminal_width=terminal_width, exitable=exitable, as_string=False)
+        # print("VALUE ERROR TRY AGAIN RESULT: %d" % selection)     # todo: There is a bug where the 2nd time + choosing a selection is not returned 
 
     if selection == 0:
         return None

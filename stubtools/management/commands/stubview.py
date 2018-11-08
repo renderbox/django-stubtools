@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-07 11:37:16
+# @Last Modified time: 2018-11-07 18:05:36
 #--------------------------------------------
 
 import re, os.path
@@ -138,7 +138,11 @@ class Command(AppCommand):
         render_ctx['page'] = "_".join(name_parts).lower()   # Name used in the URL and template
         render_ctx['page_name'] = ' '.join(name_parts)      # Human Friendly Format
 
-        render_ctx['use_path_method'] = version_check("gte", "2.0.0")
+        if version_check("gte", "2.0.0"):
+            render_ctx['resource_method'] = "path"
+        else:
+            render_ctx['resource_method'] = "url"
+
         render_ctx['class_based_view'] = True
 
         return render_ctx
@@ -156,8 +160,6 @@ class Command(AppCommand):
         #######################
         # PARSE view.py
         #######################
-
-        # view_import_line_regex = re.compile(r"^from " + VIEW_CLASS_SETTINGS[view_class]['module'] + " import (.+)", re.MULTILINE)
 
         # Slice and Dice!
         data_lines = get_file_lines(view_file)
@@ -196,9 +198,6 @@ class Command(AppCommand):
 
         if comments:
             render_ctx['view_import_statement'] += " #%s" % comments
-
-
-
 
         if not import_line:
 
@@ -254,18 +253,72 @@ class Command(AppCommand):
         data_lines = get_file_lines(url_file)
         line_count = len(data_lines)
 
-        url_import_line = None
-        view_import_line = None
-        
-        url_pattern_start = get_pattern_line("(urlpatterns =)", data_lines, default=0)
+        url_pattern_start = get_pattern_line("(urlpatterns =)", data_lines, default=line_count)
         url_pattern_end = get_pattern_line("]", data_lines[url_pattern_start:], default=0) + url_pattern_start    # Look for the ']' after the urlpatterns
-        url_pattern_lines = get_all_pattern_lines(r"(url\(|path\(|re_path\()", data_lines)
+        render_ctx['existing_patterns'] = [ p.strip() for p in get_all_pattern_lines(r"(url\(|path\(|re_path\()", data_lines) ]
 
-        print("URL PATTERN START: %d" % url_pattern_start)
-        print("URL PATTERN END: %d" % url_pattern_end)
-        print("URL PATTERNS:")
-        for p in url_pattern_lines:
-            print("    %s" % p)
+        import_block = data_lines[:url_pattern_start]
+        print("URL PATTERN START: %s" % url_pattern_start)
+
+        # import_line = get_pattern_line("^from %(view_class_module)s import (.+)" % render_ctx, data_lines[:class_func_start])  # Returns the index value of where the 
+        if version_check("gte", "2.0.0"):
+            # In Django 2.x, the resource pattern changed from 'url' to 'path'
+            url_import_line = get_pattern_line("from django.urls import", import_block)
+            print("2.x URL IMPORT LINE: %s" % url_import_line)
+
+            if url_import_line == None:
+                url_import_line = get_pattern_line("from django.conf.urls import url", import_block)
+
+                print("1.x URL IMPORT LINE: %s" % url_import_line)
+                # Try to see if this is importing an old module, if so, see about updating the old resources
+
+                if url_import_line == None:
+                    url_import_line = len(import_block)
+
+                    for c, line in enumerate(import_block):
+                        line.strip()
+                        print(c)
+                        print(line)                        
+                        if not line.startswith("#"):    # Skip passed any header comments at the start of a file
+                            url_import_line = c
+                            break
+
+                    print("Target IMPORT LINE: %s" % c)
+            
+            render_ctx['url_import_statement'] = "from django.urls import path, re_path"    # todo: this could be better and more flexible.  Need to check to see ALL modules that are loaded
+
+            # Update the Exisitng Patterns here
+            render_ctx['existing_patterns'] = [re.sub(r'url\(', r're_path(', item) for item in render_ctx['existing_patterns']]
+        else:
+            url_import_line = get_pattern_line("^from django.conf.urls import (.+)", import_block, default=0)
+            render_ctx['url_import_statement'] = "from django.conf.urls import url"
+
+        # If the view import line is missing, make sure it's there
+        if get_pattern_line("^from \. import(.+)", import_block) == None:
+            render_ctx['url_import_statement'] = render_ctx['url_import_statement'] + "\nfrom . import views"
+
+        # print("URL IMPORT LINE: %d" % url_import_line)
+
+        # from django.conf.urls import url          # < 2.0
+        # from django.urls import path, re_path     # 2.0+
+
+        if url_import_line > 0:
+            render_ctx['pre_import'] = "".join(data_lines[:url_import_line])
+        else:
+            render_ctx['pre_import'] = ""
+
+        pre_url_lines = data_lines[url_import_line:url_pattern_start]
+
+        # Check for old import line module import
+        if version_check("gte", "2.0.0"):
+            old_url_line = get_pattern_line("from django.conf.urls", pre_url_lines)
+            if old_url_line != None:
+                pre_url_lines.pop(old_url_line)
+
+            print("OLD IMPORT LINE: %s" % old_url_line)
+
+        render_ctx['pre_urls'] = "".join(pre_url_lines)
+        render_ctx['post_urls'] = "".join(data_lines[url_pattern_end + 1:])
 
         # Get the import lines
 
@@ -282,14 +335,20 @@ class Command(AppCommand):
 
         # Start Rendering a writing files
         env = Environment( loader=PackageLoader('stubtools', 'templates/commands/stubview'), autoescape=select_autoescape(['html']) )
-        template = env.get_template('view.py.j2')
+        view_template = env.get_template('view.py.j2')
+        url_template = env.get_template('urls.py.j2')
 
-        view_result = template.render(**render_ctx)
+        view_result = view_template.render(**render_ctx)
+
+        urls_result = url_template.render(**render_ctx)
 
         # print("views.py RESULT:")
         # print(view_result)
 
-
+        print( horizontal_rule() )
+        print("urls.py RESULT:")
+        print( horizontal_rule() )
+        print(urls_result)
 
 
         # # module_regex = re.compile("%s import (.+)" % view_class_module)

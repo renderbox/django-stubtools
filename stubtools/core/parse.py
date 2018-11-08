@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 10:06:34
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-07 11:35:42
+# @Last Modified time: 2018-11-07 17:39:15
 # --------------------------------------------
 
 import re
@@ -15,7 +15,6 @@ FUNCTION_OR_CLASS_REGEX = re.compile(r"(def|class)")
 
 def get_classes_and_functions_start(data_lines):
     return get_pattern_line(r"(def|class)", data_lines)
-
 
 def get_pattern_line(pattern, data_lines, first=True, default=None):
     '''
@@ -34,6 +33,7 @@ def get_pattern_line(pattern, data_lines, first=True, default=None):
                 result = c
 
     return result
+
 
 def get_all_pattern_lines(pattern, data_lines, values=True):
     '''
