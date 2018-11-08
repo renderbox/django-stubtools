@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-07 18:05:36
+# @Last Modified time: 2018-11-07 18:11:42
 #--------------------------------------------
 
 import re, os.path
@@ -337,6 +337,7 @@ class Command(AppCommand):
         env = Environment( loader=PackageLoader('stubtools', 'templates/commands/stubview'), autoescape=select_autoescape(['html']) )
         view_template = env.get_template('view.py.j2')
         url_template = env.get_template('urls.py.j2')
+        template_template = env.get_template('views/TemplateView.html.j2')
 
         view_result = view_template.render(**render_ctx)
 
@@ -345,10 +346,11 @@ class Command(AppCommand):
         # print("views.py RESULT:")
         # print(view_result)
 
-        print( horizontal_rule() )
-        print("urls.py RESULT:")
-        print( horizontal_rule() )
-        print(urls_result)
+        # print( horizontal_rule() )
+        # print("urls.py RESULT:")
+        # print( horizontal_rule() )
+        # print(urls_result)
+
 
 
         # # module_regex = re.compile("%s import (.+)" % view_class_module)
