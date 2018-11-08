@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-10-30 18:32:15
+# @Last Modified time: 2018-11-08 12:05:53
 #--------------------------------------------
 
 import os.path
@@ -13,11 +13,9 @@ import inspect
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from django.core.management.base import AppCommand, CommandError
-# from django.db import models
-
-# from stubtools.core import underscore_camel_case, import_line_check, class_name
 
 from stubtools.core.search import get_first_index, get_last_index, get_first_and_last_index
+from stubtools.core.file import write_file
 
 
 class Command(AppCommand):
@@ -40,15 +38,13 @@ class Command(AppCommand):
 
             try:
                 app, model = entry.split(".")
-                # print("CHECKING FOR MODEL ADMIN FOR: %s.%s" % (app, model))
                 self.process(app, model)
 
             except ValueError:
                 app = entry
-                models = input("Which model(s) did you want to work on in the app \"%s\"? (Model Model ...) > " % app)
+                models = input("Which model(s) did you want to work on in the app \"%s\"? (Model Model ...) > " % app)  # todo: replace with selection prompt
 
                 for model in models.split():
-                    # print("CHECKING FOR MODEL FORM FOR: %s.%s" % (app, model))
                     self.process(app, model)
 
 
@@ -111,8 +107,6 @@ class Command(AppCommand):
         data_lines = data.split("\n")
         line_count = len(data_lines)
 
-        # print("Line Count: %d" % line_count)
-
         # Find the parts of the file to slice
 
         # Check that the admin module is loaded
@@ -128,12 +122,6 @@ class Command(AppCommand):
 
         # See if the Admin module is loaded
         admin_import_line = get_first_index(data_lines, self.import_line_regex)
-        # for c, line in enumerate(data_lines):
-        #     check = self.import_line_regex.findall( line )
-
-        #     if check:
-        #         admin_import_line = c       # Make note of the line number
-        #         break
 
         # Model Import Line
         for c, line in enumerate(data_lines):
@@ -147,44 +135,19 @@ class Command(AppCommand):
         render_ctx['models'] = list(set(render_ctx['models']))  # Remove any duplicates
         render_ctx['models'].sort()
 
-        # print("model_import_line Index: %d" % model_import_line)
-
         # Admin Registration
         admin_registry_start, admin_registry_end = get_first_and_last_index(data_lines, self.admin_site_register_regex)
-        # for c, line in enumerate(data_lines[model_import_line:]):
-        #     check = self.admin_site_register_regex.findall( line )
-
-        #     if check:
-        #         if admin_registry_start == admin_registry_end:
-        #             admin_registry_start = c + model_import_line
-
-        #         admin_registry_end = c + model_import_line       # Make note of the line number
-        #         # print("\tAdmin Registration found on line: %d" % (admin_registry_end + 1))
-        #         break
-
-        # print("admin_registry_start Index: %d" % admin_registry_start)
-        # print("admin_registry_end Index: %d" % admin_registry_end)
 
         # Model Admin
         # Find the registries first to reduce the search range for the Model Admins
         model_admin_class_end = get_last_index(data_lines, self.func_regex)
-        # for c, line in enumerate(data_lines[model_import_line:admin_registry_start]):
-        #     check = self.func_regex.findall( line )
-
-        #     if check:
-        #         model_admin_class_end = c + model_import_line      # Make note of the line number
-        #         # print("\tModel Admin found on line: %d" % (model_admin_class_end + 1))
 
         # Take the last model admin line and find the break between it and the registry line
         for c, line in enumerate(data_lines[model_admin_class_end:admin_registry_start]):
             if line:
                 model_admin_class_end = c + model_admin_class_end
-                # print("\tModel Admin Class found on line: %d" % (model_admin_class_end + 1))
             else:
                 break
-
-        # print("model_admin_class_end Index: %d" % model_admin_class_end)
-
 
         # Slice the existing admin.py into parts
         if 0 < model_import_line:
@@ -201,17 +164,11 @@ class Command(AppCommand):
         if admin_registry_end < line_count:
             render_ctx['post_registration'] = "\n".join(data_lines[(admin_registry_end + 1):line_count] )    # Everything up until the model import line
 
-        # print(render_ctx)
-
         env = Environment( loader=PackageLoader('stubtools', 'templates/commands/stubadmin'), autoescape=select_autoescape(['html']) )
         template = env.get_template('admin.j2')
 
         # Print out the results to the terminal, add as an option?
-        # print("Add the following to your code if they are not already there:\n")
-        # print('Creating Admin Interface: %s' % model_admin)
         result = template.render(**render_ctx)
-        # print( result )
 
-        mf = open( admin_file, "w" )
-        mf.write(result)
-        mf.close()
+        write_file(admin_file, result)
+
