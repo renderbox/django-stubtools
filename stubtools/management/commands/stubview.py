@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 09:40:29
+# @Last Modified time: 2018-11-08 11:05:01
 #--------------------------------------------
 
 import re, os.path
@@ -19,7 +19,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case, parse_app_input, get_file_lines
 from stubtools.core.prompt import ask_question, ask_yes_no_question, selection_list, horizontal_rule
 from stubtools.core.parse import IMPORT_REGEX, get_classes_and_functions_start, get_pattern_line, get_all_pattern_lines, get_classes_and_functions
-from stubtools.core.view_classes import VIEW_CLASS_SETTINGS, STUBTOOLS_IGNORE_MODULES
+from stubtools.core.view_classes import VIEW_CLASS_DEFAULT_SETTINGS, VIEW_CLASS_SETTINGS, STUBTOOLS_IGNORE_MODULES
 
 
 class Command(AppCommand):
@@ -86,7 +86,22 @@ class Command(AppCommand):
         render_ctx['template_in_app'] = ask_yes_no_question("Place templates at the app level?", default=True, required=True)
 
         # Ask the Queries to build the attribute values
-        for query in VIEW_CLASS_SETTINGS[view_class].get("queries", []):
+
+        queries = []
+        queries.extend(VIEW_CLASS_SETTINGS[view_class].get("queries", []))
+
+        default_queries = []
+        default_queries.extend(VIEW_CLASS_DEFAULT_SETTINGS['queries'])
+
+        default_values = VIEW_CLASS_SETTINGS[view_class].get("default_values", {})
+
+        for item in default_queries:
+            if item['key'] in default_values:
+                item['default'] = default_values[item['key']]
+
+        queries.extend(default_queries)
+
+        for query in queries:
             default = query.get("default", None)
             ignore_default = query.get("ignore_default", False)
 
@@ -266,11 +281,11 @@ class Command(AppCommand):
         data_lines = get_file_lines(url_file)
         line_count = len(data_lines)
 
-        url_pattern_start = get_pattern_line("(urlpatterns =)", data_lines, default=line_count)
-        url_pattern_end = get_pattern_line("]", data_lines[url_pattern_start:], default=0) + url_pattern_start    # Look for the ']' after the urlpatterns
+        resource_pattern_start = get_pattern_line("(urlpatterns =)", data_lines, default=line_count)
+        resource_pattern_end = get_pattern_line("]", data_lines[resource_pattern_start:], default=0) + resource_pattern_start    # Look for the ']' after the urlpatterns
         render_ctx['existing_patterns'] = [ p.strip() for p in get_all_pattern_lines(r"(url\(|path\(|re_path\()", data_lines) ]
 
-        import_block = data_lines[:url_pattern_start]
+        import_block = data_lines[:resource_pattern_start]
 
         if version_check("gte", "2.0.0"):
             url_import_line = get_pattern_line("from django.urls import", import_block)
@@ -307,7 +322,7 @@ class Command(AppCommand):
         else:
             render_ctx['pre_import'] = ""
 
-        pre_url_lines = data_lines[url_import_line:url_pattern_start]
+        pre_url_lines = data_lines[url_import_line:resource_pattern_start]
 
         # Check for old import line module import
         if version_check("gte", "2.0.0"):
@@ -318,7 +333,7 @@ class Command(AppCommand):
             print("OLD IMPORT LINE: %s" % old_url_line)
 
         render_ctx['pre_urls'] = "".join(pre_url_lines)
-        render_ctx['post_urls'] = "".join(data_lines[url_pattern_end + 1:])
+        render_ctx['post_urls'] = "".join(data_lines[resource_pattern_end + 1:])
 
         # Get the import lines
 
