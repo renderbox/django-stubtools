@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 17:26:23
+# @Last Modified time: 2018-11-09 10:14:04
 #--------------------------------------------
 
 import re, os.path
@@ -376,11 +376,11 @@ class Command(AppCommand):
         # print( horizontal_rule() )
         # print(urls_result)
 
-        print( horizontal_rule() )
-        print("TEMPLATE RESULT:")
-        print(template_file)
-        print( horizontal_rule() )
-        print(template_results)
+        # print( horizontal_rule() )
+        # print("TEMPLATE RESULT:")
+        # print(template_file)
+        # print( horizontal_rule() )
+        # print(template_results)
 
         # print( horizontal_rule() )
         # print("FILES:")
@@ -388,8 +388,8 @@ class Command(AppCommand):
         # print("    URL FILE: %s" % url_file)
         # print("    TEMPLATE FILE: %s" % template_file)
 
-        # write_file(view_file, view_result)
-        # write_file(url_file, urls_result)
-        # write_file(template_file, template_results)
+        write_file(view_file, view_result)
+        write_file(url_file, urls_result)
+        write_file(template_file, template_results)
 
 
