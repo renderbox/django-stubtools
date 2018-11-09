@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 17:11:08
+# @Last Modified time: 2018-11-08 17:18:13
 #--------------------------------------------
 
 import re, os.path
@@ -91,7 +91,7 @@ class Command(AppCommand):
 
         print('Creating Model: %s' % model)
 
-        env = Environment( loader=PackageLoader('stubtools', 'jinja2/commands/stubmodel'), autoescape=select_autoescape(['html']) )
+        env = Environment( loader=PackageLoader('stubtools', 'jinja2/stubtools/stubmodel'), autoescape=select_autoescape(['html']) )
         template = env.get_template('model.j2')
 
         if not import_entry:

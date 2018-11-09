@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 17:10:58
+# @Last Modified time: 2018-11-08 17:17:35
 #--------------------------------------------
 
 import re, os.path
@@ -13,6 +13,7 @@ import pprint
 
 from django.core.management.base import AppCommand, CommandError
 from django.views.generic.base import View
+from django.template.loader import get_template
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
@@ -349,7 +350,7 @@ class Command(AppCommand):
 
         # Start Rendering a writing files
         # todo: need to figure out way to load templates using Django's settings so users can create customized override templates.
-        env = Environment( loader=PackageLoader('stubtools', 'jinja2/commands/stubview'), autoescape=select_autoescape(['html']) )
+        env = Environment( loader=PackageLoader('stubtools', 'jinja2/stubtools/stubview'), autoescape=select_autoescape(['html']) )
         view_template = env.get_template('view.py.j2')
         url_template = env.get_template('urls.py.j2')
         template_template = env.get_template(render_ctx['template_template'])
@@ -366,11 +367,11 @@ class Command(AppCommand):
         # print( horizontal_rule() )
         # print(urls_result)
 
-        # print( horizontal_rule() )
-        # print("TEMPLATE RESULT:")
-        # print(template_file)
-        # print( horizontal_rule() )
-        # print(template_results)
+        print( horizontal_rule() )
+        print("TEMPLATE RESULT:")
+        print(template_file)
+        print( horizontal_rule() )
+        print(template_results)
 
         # print( horizontal_rule() )
         # print("FILES:")
@@ -378,8 +379,8 @@ class Command(AppCommand):
         # print("    URL FILE: %s" % url_file)
         # print("    TEMPLATE FILE: %s" % template_file)
 
-        write_file(view_file, view_result)
-        write_file(url_file, urls_result)
-        write_file(template_file, template_results)
+        # write_file(view_file, view_result)
+        # write_file(url_file, urls_result)
+        # write_file(template_file, template_results)
 
 
