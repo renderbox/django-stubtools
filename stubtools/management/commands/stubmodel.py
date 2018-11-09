@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 17:18:13
+# @Last Modified time: 2018-11-09 15:00:17
 #--------------------------------------------
 
 import re, os.path
@@ -13,18 +13,13 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 from django.core.management.base import AppCommand, CommandError
 from django.db import models
+from django.db.models import Field
 
-from stubtools.core import underscore_camel_case, import_line_check, class_name
+from stubtools.core import underscore_camel_case, import_line_check, class_name, get_all_subclasses
 
 # Fields that are not really meant to be included in the list of useable Model Fields
 EXCLUDED_FIELDS = ['BLANK_CHOICE_DASH', 'Empty', 'Field', 'FieldDoesNotExist', 'NOT_PROVIDED']
 
-
-def get_model_fields():
-    # dict([(name, cls) for name, cls in models.__dict__.items() if isinstance(cls, models.Field.__class__)])
-    result = [f for f in dict(inspect.getmembers(models))['fields_all'] if f not in EXCLUDED_FIELDS]
-    result.sort()
-    return result
 
 
 class Command(AppCommand):
@@ -44,14 +39,19 @@ class Command(AppCommand):
             return
 
         for entry in args:
-            app, model = entry.split(".")
-            print("CHECKING FOR MODEL: %s" % model)
-            self.process(app, model)
+            # app, model = entry.split(".")
+            # print("CHECKING FOR MODEL: %s" % model)
+            self.process(entry)
 
 
-    def process(self, app, model, *args, **kwargs):
+    def process(self, app_model, *args, **kwargs):
+
+        app, model = app_model.split(".")
+
         model_file = "%s/models.py" % app
         print("MODEL FILE: %s" % model_file)
+
+        model_fields = get_all_subclasses(Field, ignore_modules=["django.contrib.contenttypes"])
 
         import_entry = False
         first_class_line = 0
@@ -91,8 +91,8 @@ class Command(AppCommand):
 
         print('Creating Model: %s' % model)
 
-        env = Environment( loader=PackageLoader('stubtools', 'jinja2/stubtools/stubmodel'), autoescape=select_autoescape(['html']) )
-        template = env.get_template('model.j2')
+        env = Environment( loader=PackageLoader('stubtools', 'jinja2'), autoescape=select_autoescape(['html']) )
+        template = env.get_template('stubtools/stubmodel/model.py.j2')
 
         if not import_entry:
             # FIND WHERE TO ADD THE IMPORT LINES
@@ -124,7 +124,7 @@ class Command(AppCommand):
         # new_lines.append('\n\nclass %s(models.Model):\n    name = models.CharField(_("Name"), max_length=300)' % model)
         # new_lines.append(" ")
 
-        # model_fields = get_model_fields()
+        # model_fields = get_all_subclasses(Field)
 
         mf = open( model_file, "a" )
         # NEEDS TO LOAD AND REWRITE THE FILE RATHER THAN JUST APPEND

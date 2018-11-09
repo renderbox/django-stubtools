@@ -3,11 +3,10 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 13:00:08
+# @Last Modified time: 2018-11-09 14:58:16
 #--------------------------------------------
 
 import re, os.path
-# import ast
 import django
 import pprint
 
@@ -42,8 +41,6 @@ class Command(AppCommand):
             return
 
     def get_context(self, app, view, view_class):
-
-        class_based_views_available = version_check("gte", "1.3.0")        # SHOULD DEFAULT FOR 1.3+ TO True.  NEED ATTR IN settings.py TO CONFIG SET TO FALSE.
 
         # Load the classes each time so they can be made to include views that were previously created
         view_classes = get_all_subclasses(View, ignore_modules=STUBTOOLS_IGNORE_MODULES)

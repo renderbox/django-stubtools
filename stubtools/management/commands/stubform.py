@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-10-08 16:30:32
+# @Last Modified time: 2018-11-09 14:50:16
 #--------------------------------------------
 
 from django.core.management.base import AppCommand, CommandError
@@ -110,6 +110,9 @@ class Command(AppCommand):
             # CREATE IMPORT LINE
 
             # ADD TO IMPORT LINE
+
+        # model_ctx = { 'modelform':modelform, 'model':model }
+
 
         mf = open( form_file, "a" )
         mf.write("\n\nclass %s(forms.ModelForm):\n\n    class Meta:\n        model = %s" % (modelform, model) )
