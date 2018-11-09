@@ -71,6 +71,9 @@ TEMPLATES = [
         'APP_DIRS': True,
         'DIRS': [
         ],
+        'OPTIONS': {
+            'autoescape': False
+        }
     },
 
 ]

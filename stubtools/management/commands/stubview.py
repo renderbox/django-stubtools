@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 12:28:31
+# @Last Modified time: 2018-11-09 12:38:00
 #--------------------------------------------
 
 import re, os.path
@@ -352,25 +352,13 @@ class Command(AppCommand):
         # Render Templates
 
         # load templates using Django's settings so users can create customized override templates.
-        # view_template = get_template('stubtools/stubview/view.py.j2', using='jinja2')
-        # url_template = get_template('stubtools/stubview/urls.py.j2', using='jinja2')
-        # constructor_template = get_template('stubtools/stubview/' + render_ctx['constructor_template'], using='jinja2')
+        view_template = get_template('stubtools/stubview/view.py.j2', using='jinja2')
+        url_template = get_template('stubtools/stubview/urls.py.j2', using='jinja2')
+        constructor_template = get_template('stubtools/stubview/' + render_ctx['constructor_template'], using='jinja2')
 
-        # view_result = view_template.render(context=render_ctx)
-        # urls_result = url_template.render(context=render_ctx)
-        # template_results = constructor_template.render(context=render_ctx)
-
-        # Using this aproach for now but leaving the code above in order to sort things out later.
-        # todo: solve the encoding issue with using Django to render out all text as safe
-        #       Using Jinja2 directly resolves that for now but breaks being able to create override templates by users
-        env = Environment( loader=PackageLoader('stubtools', 'jinja2'), autoescape=select_autoescape(['html']) )
-        view_template = env.get_template('stubtools/stubview/view.py.j2')
-        url_template = env.get_template('stubtools/stubview/urls.py.j2')
-        template_template = env.get_template('stubtools/stubview/' + render_ctx['constructor_template'])
-
-        view_result = view_template.render(**render_ctx)
-        urls_result = url_template.render(**render_ctx)
-        template_results = template_template.render(**render_ctx)
+        view_result = view_template.render(context=render_ctx)
+        urls_result = url_template.render(context=render_ctx)
+        template_results = constructor_template.render(context=render_ctx)
 
         #######################
         # Writing Output
@@ -378,10 +366,10 @@ class Command(AppCommand):
         # print("views.py RESULT:")
         # print(view_result)
 
-        # print( horizontal_rule() )
-        # print("urls.py RESULT:")
-        # print( horizontal_rule() )
-        # print(urls_result)
+        print( horizontal_rule() )
+        print("urls.py RESULT:")
+        print( horizontal_rule() )
+        print(urls_result)
 
         # print( horizontal_rule() )
         # print("TEMPLATE RESULT:")
