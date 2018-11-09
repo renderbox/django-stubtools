@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 17:17:35
+# @Last Modified time: 2018-11-08 17:26:23
 #--------------------------------------------
 
 import re, os.path
@@ -349,15 +349,24 @@ class Command(AppCommand):
         # print( horizontal_rule() )
 
         # Start Rendering a writing files
-        # todo: need to figure out way to load templates using Django's settings so users can create customized override templates.
-        env = Environment( loader=PackageLoader('stubtools', 'jinja2/stubtools/stubview'), autoescape=select_autoescape(['html']) )
-        view_template = env.get_template('view.py.j2')
-        url_template = env.get_template('urls.py.j2')
-        template_template = env.get_template(render_ctx['template_template'])
+        if version_check("gte", "1.8.0"):
+            # load templates using Django's settings so users can create customized override templates.
+            view_template = get_template('stubtools/stubview/view.py.j2')
+            url_template = get_template('stubtools/stubview/urls.py.j2')
+            template_template = get_template('stubtools/stubview/' + render_ctx['template_template'])
 
-        view_result = view_template.render(**render_ctx)
-        urls_result = url_template.render(**render_ctx)
-        template_results = template_template.render(**render_ctx)
+            view_result = view_template.render(context=render_ctx)
+            urls_result = url_template.render(context=render_ctx)
+            template_results = template_template.render(context=render_ctx)
+        else:
+            env = Environment( loader=PackageLoader('stubtools', 'jinja2'), autoescape=select_autoescape(['html']) )
+            view_template = env.get_template('stubtools/stubview/view.py.j2')
+            url_template = env.get_template('stubtools/stubview/urls.py.j2')
+            template_template = env.get_template('stubtools/stubview/' + render_ctx['template_template'])
+
+            view_result = view_template.render(**render_ctx)
+            urls_result = url_template.render(**render_ctx)
+            template_results = template_template.render(**render_ctx)
 
         # print("views.py RESULT:")
         # print(view_result)
