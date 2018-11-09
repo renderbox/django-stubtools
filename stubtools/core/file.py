@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 # --------------------------------------------
 # Copyright 2018 Grant Viklund
 # @Author: Grant Viklund
 # @Date:   2018-11-08 11:30:11
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 11:09:31
+# @Last Modified time: 2018-11-09 12:17:26
 # --------------------------------------------
 
 import os
