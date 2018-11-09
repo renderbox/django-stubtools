@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 14:09:40
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 11:18:25
+# @Last Modified time: 2018-11-08 14:31:08
 # --------------------------------------------
 
 
@@ -51,7 +51,12 @@ VIEW_CLASS_SETTINGS = {
             {
                 "question": "Which Model is this for?",
                 "key": "model",
-                'required': True
+                'required': True,
+            },
+            {
+                "question": "Did you want to add a queryset?",
+                "key": "queryset",
+                "example": "Model.objects.all()",    # Examples are different from defaults in that they do not return a value
             },
         ],
         "append": "ListView",
