@@ -72,10 +72,9 @@ TEMPLATES = [
         'DIRS': [
         ],
         'OPTIONS': {
-            'autoescape': False
+            'environment': 'stubtools.jinja2.environment',
         }
     },
-
 ]
 
 WSGI_APPLICATION = 'develop.wsgi.application'
