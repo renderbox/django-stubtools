@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 14:09:40
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 14:31:08
+# @Last Modified time: 2018-11-09 10:47:16
 # --------------------------------------------
 
 
@@ -29,15 +29,16 @@ VIEW_CLASS_DEFAULT_SETTINGS = {
             "as_atttr": False,
         },
     ],
-    "append": "View",
+    "view_suffix": "View",
     "template": 'views/TemplateView.html.j2',
 }
 
 
 VIEW_CLASS_SETTINGS = {
-    "TemplateView": {
+    "django.views.generic.base.TemplateView": {
         "queries": [],
-        "append": "View",
+        "view_suffix": "View",
+        "class_name": "TemplateView",
         "module": "django.views.generic",
         "default_values":
             {
@@ -46,7 +47,7 @@ VIEW_CLASS_SETTINGS = {
                 "resource_pattern": "%(view_name)s/",
             },
     },
-    "ListView": {
+    "django.views.generic.list.ListView": {
         "queries": [
             {
                 "question": "Which Model is this for?",
@@ -59,7 +60,8 @@ VIEW_CLASS_SETTINGS = {
                 "example": "Model.objects.all()",    # Examples are different from defaults in that they do not return a value
             },
         ],
-        "append": "ListView",
+        "class_name": "ListView",
+        "view_suffix": "ListView",
         "default_values":
             {
                 "template_name": "%(app_label)s/%(model_name)s_list.html",
@@ -68,7 +70,7 @@ VIEW_CLASS_SETTINGS = {
             },
         "template": 'views/ListView.html.j2',
     },
-    "DetailView": {
+    "django.views.generic.detail.DetailView": {
         "queries": [
             {
                 "question": "Which Model is this for?",
@@ -96,7 +98,8 @@ VIEW_CLASS_SETTINGS = {
                 "default": "%(model)sForm",
             },
         ],
-        "append": "DetailView",
+        "class_name": "DetailView",
+        "view_suffix": "DetailView",
         "default_values":
             {
                 "template_name": "%(app_label)s/%(model_name)s_detail.html",
@@ -104,7 +107,7 @@ VIEW_CLASS_SETTINGS = {
                 "resource_pattern": "%(view_name)s/<slug:%(slug_url_kwarg)s>/details/",
             },
     },
-    "FormView": {
+    "django.views.generic.edit.FormView": {
         "queries": [
             {
                 "question": "Which Model is this for?",
@@ -118,15 +121,19 @@ VIEW_CLASS_SETTINGS = {
                 "default": "%(model)sForm",
             },
         ],
-        "append": "FormView",
+        "view_suffix": "FormView",
+        "class_name": "FormView",
         "default_values":
             {
                 "template_name": "%(app_label)s/%(model_name)s_form.html",
                 "resource_name": "%(app_label)s-%(view_name)s",
                 "resource_pattern": "%(view_name)s/<slug:%(slug_url_kwarg)s>/details/",
-            },
+            }
         },
-    "RedirectView": {}
+    "django.views.generic.base.RedirectView": {
+        "view_suffix": "RedirectView",
+        "class_name": "RedirectView",
+        }
 }
 
 STUBTOOLS_IGNORE_MODULES = ["django.views.i18n", "django.contrib.admin.views"]

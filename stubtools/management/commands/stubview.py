@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 10:14:04
+# @Last Modified time: 2018-11-09 11:07:39
 #--------------------------------------------
 
 import re, os.path
@@ -47,22 +47,28 @@ class Command(AppCommand):
 
         # Load the classes each time so they can be made to include views that were previously created
         view_classes = get_all_subclasses(View, ignore_modules=STUBTOOLS_IGNORE_MODULES)
+        view_class_settings = {}
+        view_class_settings.update(VIEW_CLASS_SETTINGS)     # Update the setting dict with defaults
 
         # Update the VIEW_CLASS_SETTINGS module value
         for cl in view_classes:
             class_name = cl.__name__    # Get the short name for the class
+            view_key = cl.__module__ + "." + class_name
 
-            if class_name not in VIEW_CLASS_SETTINGS: 
-                VIEW_CLASS_SETTINGS[class_name] = {} 
+            if view_key not in view_class_settings:
+                view_class_settings[view_key] = {}
 
-            if not 'module' in VIEW_CLASS_SETTINGS[class_name]:               # Only if not specified already in the settings
-                VIEW_CLASS_SETTINGS[class_name]['module'] = cl.__module__   # Set the module to the full import path
+            if not 'module' in view_class_settings[view_key]:                 # Only if not specified already in the settings
+                view_class_settings[view_key]['module'] = cl.__module__       # Set the module to the full import path
 
-        classes = list(VIEW_CLASS_SETTINGS.keys())
+            if not 'class_name' in view_class_settings[view_key]:             # Only if not specified already in the settings
+                view_class_settings[view_key]['class_name'] = class_name      # Set the module to the full import path
 
         # PICK THE VIEW CLASS TO USE BASED ON A LIST OF AVAILABLE CLASSES IF NOT SET IN THE COMMAND LINE
         if not view_class:
-            view_class = selection_list(classes, as_string=True)
+            view_key = selection_list(list(view_class_settings.keys()), as_string=True)
+
+        view_class = view_class_settings[view_key]['class_name']
 
         if not view:
             default = "My%s" % view_class
@@ -75,27 +81,25 @@ class Command(AppCommand):
 
         render_ctx = {'app':app, 'view':view, 'view_name':view_name, 'views':[],
                         'view_class':view_class, 'attributes':{}, 
-                        'view_class_module': VIEW_CLASS_SETTINGS[view_class]['module'] }
-
-        # self.view_class_module = VIEW_CLASS_SETTINGS[view_class]['module']
+                        'view_class_module': view_class_settings[view_key]['module'] }
 
         attr_ctx = {'app_label': app, 'view_name':view_name}
 
         key_remove_attr_list = []   # This is so defaults are available while the questioning is going on so defaults can be applied to other attrs.
-
         render_ctx['template_in_app'] = ask_yes_no_question("Place templates at the app level?", default=True, required=True)
+        render_ctx['constructor_template'] = view_class_settings[view_key].get("template", VIEW_CLASS_DEFAULT_SETTINGS['template'])
 
-        render_ctx['template_template'] = VIEW_CLASS_SETTINGS[view_class].get("template", VIEW_CLASS_DEFAULT_SETTINGS['template'])
-
-        # Ask the Queries to build the attribute values
+        ################
+        # QUERIES:
+        # Query the user to build the attribute values
 
         queries = []
-        queries.extend(VIEW_CLASS_SETTINGS[view_class].get("queries", []))
+        queries.extend(view_class_settings[view_key].get("queries", []))
 
         default_queries = []
         default_queries.extend(VIEW_CLASS_DEFAULT_SETTINGS['queries'])
 
-        default_values = VIEW_CLASS_SETTINGS[view_class].get("default_values", {})
+        default_values = view_class_settings[view_key].get("default_values", {})
 
         for item in default_queries:
             if item['key'] in default_values:
@@ -116,9 +120,8 @@ class Command(AppCommand):
 
             # Create the default value so it can be used in the query prompt
             if default:
-                default = default % attr_ctx
+                default = default % attr_ctx    # Update the default value with the attr_ctx
 
-            # print(attr_ctx)
             answer = ask_question(query["question"], default=default, required=query.get("required", False) )
 
             # If the result is seto to 'ignore_default' it will be poped out of the context when queries are done.
@@ -136,28 +139,25 @@ class Command(AppCommand):
                 render_ctx['attributes'][key] = answer
             else:
                 render_ctx[key] = answer
-            # print("ANSWER: %s" % answer)
 
         for key in key_remove_attr_list:
             del render_ctx['attributes'][key]
 
-        # print(render_ctx['attributes'])
-
-        page_append = VIEW_CLASS_SETTINGS[view_class].get("append", "View")     # Given the view type, there is a common convention for appending to the name of the "page's" View's Class
+        view_suffix = view_class_settings[view_key].get("view_suffix", "View")     # Given the view type, there is a common convention for appending to the name of the "page's" View's Class
 
         render_ctx['description'] = ask_question("Did you want to add a quick description?")
 
         # POP VIEW OFF THE NAME PARTS IF IT IS THERE
-        if view.endswith(page_append):
+        if view.endswith(view_suffix):
             render_ctx['page_class'] = view
         else:
-            render_ctx['page_class'] = view + page_append
+            render_ctx['page_class'] = view + view_suffix
 
         # Break the Name up into parts
-        name_parts = split_camel_case(view[:(-1 * len(page_append))])
+        name_parts = split_camel_case(view[:(-1 * len(view_suffix))])
 
         render_ctx['page'] = "_".join(name_parts).lower()   # Name used in the URL and template
-        render_ctx['page_name'] = ' '.join(name_parts)      # Human Friendly Format
+        render_ctx['page_name'] = ' '.join(name_parts)      # Title Friendly Format
 
         if version_check("gte", "2.0.0"):
             render_ctx['resource_method'] = "path"
@@ -349,24 +349,14 @@ class Command(AppCommand):
         # print( horizontal_rule() )
 
         # Start Rendering a writing files
-        if version_check("gte", "1.8.0"):
-            # load templates using Django's settings so users can create customized override templates.
-            view_template = get_template('stubtools/stubview/view.py.j2')
-            url_template = get_template('stubtools/stubview/urls.py.j2')
-            template_template = get_template('stubtools/stubview/' + render_ctx['template_template'])
+        # load templates using Django's settings so users can create customized override templates.
+        view_template = get_template('stubtools/stubview/view.py.j2')
+        url_template = get_template('stubtools/stubview/urls.py.j2')
+        constructor_template = get_template('stubtools/stubview/' + render_ctx['constructor_template'])
 
-            view_result = view_template.render(context=render_ctx)
-            urls_result = url_template.render(context=render_ctx)
-            template_results = template_template.render(context=render_ctx)
-        else:
-            env = Environment( loader=PackageLoader('stubtools', 'jinja2'), autoescape=select_autoescape(['html']) )
-            view_template = env.get_template('stubtools/stubview/view.py.j2')
-            url_template = env.get_template('stubtools/stubview/urls.py.j2')
-            template_template = env.get_template('stubtools/stubview/' + render_ctx['template_template'])
-
-            view_result = view_template.render(**render_ctx)
-            urls_result = url_template.render(**render_ctx)
-            template_results = template_template.render(**render_ctx)
+        view_result = view_template.render(context=render_ctx)
+        urls_result = url_template.render(context=render_ctx)
+        template_results = constructor_template.render(context=render_ctx)
 
         # print("views.py RESULT:")
         # print(view_result)
