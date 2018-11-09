@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 11:55:24
+# @Last Modified time: 2018-11-09 12:16:06
 #--------------------------------------------
 
 import re, os.path
@@ -350,9 +350,9 @@ class Command(AppCommand):
 
         # Start Rendering a writing files
         # load templates using Django's settings so users can create customized override templates.
-        view_template = get_template('stubtools/stubview/view.py.j2')
-        url_template = get_template('stubtools/stubview/urls.py.j2')
-        constructor_template = get_template('stubtools/stubview/' + render_ctx['constructor_template'])
+        view_template = get_template('stubtools/stubview/view.py.j2', using='jinja2')
+        url_template = get_template('stubtools/stubview/urls.py.j2', using='jinja2')
+        constructor_template = get_template('stubtools/stubview/' + render_ctx['constructor_template'], using='jinja2')
 
         view_result = view_template.render(context=render_ctx)
         urls_result = url_template.render(context=render_ctx)
