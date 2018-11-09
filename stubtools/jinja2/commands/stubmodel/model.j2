@@ -1,4 +1,0 @@
-
-{% if model_name %}class {{ model_name }}(models.Model):{% endif %}
-{% for field in fields %}    {{ field.field_name }} = models.{{ field.field_type }}(_("{{ field.field_name|title }}"){% if field.field_kwargs %}, {% for key, value in field.field_kwargs.items() %}{{ key }}={{ value }} {% endfor %}{% endif %}){% endfor %}
-

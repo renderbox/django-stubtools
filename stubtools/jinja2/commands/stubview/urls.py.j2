@@ -1,7 +1,0 @@
-{{ pre_import }}{{ url_import_statement }}{# Add the import line only if it's missing #}
-{{ pre_urls }}{% if not pre_urls %}
-{% endif %}urlpatterns = [{% for existing_pattern in existing_patterns %}
-    {{ existing_pattern }}{% endfor %}
-    {{ resource_method }}('{{ resource_pattern }}', views.{{ view }}{% if class_based_view %}.as_view(){% endif %}, name='{{ resource_name }}'),
-]
-{{ post_urls }}
