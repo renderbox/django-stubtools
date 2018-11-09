@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 11:07:39
+# @Last Modified time: 2018-11-09 11:55:24
 #--------------------------------------------
 
 import re, os.path
@@ -380,6 +380,9 @@ class Command(AppCommand):
 
         write_file(view_file, view_result)
         write_file(url_file, urls_result)
-        write_file(template_file, template_results)
+
+        # Only write if it does not exist:
+        if not os.path.exists(template_file):
+            write_file(template_file, template_results)
 
 
