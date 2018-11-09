@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 12:38:00
+# @Last Modified time: 2018-11-09 13:00:08
 #--------------------------------------------
 
 import re, os.path
@@ -366,10 +366,10 @@ class Command(AppCommand):
         # print("views.py RESULT:")
         # print(view_result)
 
-        print( horizontal_rule() )
-        print("urls.py RESULT:")
-        print( horizontal_rule() )
-        print(urls_result)
+        # print( horizontal_rule() )
+        # print("urls.py RESULT:")
+        # print( horizontal_rule() )
+        # print(urls_result)
 
         # print( horizontal_rule() )
         # print("TEMPLATE RESULT:")
@@ -383,11 +383,11 @@ class Command(AppCommand):
         # print("    URL FILE: %s" % url_file)
         # print("    TEMPLATE FILE: %s" % template_file)
 
-        # write_file(view_file, view_result)
-        # write_file(url_file, urls_result)
+        write_file(view_file, view_result)
+        write_file(url_file, urls_result)
 
-        # # Only write if it does not exist:
-        # if not os.path.exists(template_file):
-        #     write_file(template_file, template_results)
+        # Only write if it does not exist:
+        if not os.path.exists(template_file):
+            write_file(template_file, template_results)
 
 

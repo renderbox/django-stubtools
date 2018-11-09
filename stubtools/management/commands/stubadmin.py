@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 17:18:18
+# @Last Modified time: 2018-11-09 13:47:54
 #--------------------------------------------
 
 import os.path
@@ -164,11 +164,9 @@ class Command(AppCommand):
         if admin_registry_end < line_count:
             render_ctx['post_registration'] = "\n".join(data_lines[(admin_registry_end + 1):line_count] )    # Everything up until the model import line
 
-        env = Environment( loader=PackageLoader('stubtools', 'jinja2/stubtools/stubadmin'), autoescape=select_autoescape(['html']) )
-        template = env.get_template('admin.j2')
-
         # Print out the results to the terminal, add as an option?
-        result = template.render(**render_ctx)
+        admin_template = get_template('stubtools/stubadmin/admin.py.j2', using='jinja2')
+        admin_result = admin_template.render(context=render_ctx)
 
-        write_file(admin_file, result)
+        write_file(admin_file, admin_result)
 
