@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 10:06:34
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 17:52:03
+# @Last Modified time: 2018-11-09 18:07:07
 # --------------------------------------------
 
 import re
@@ -104,3 +104,19 @@ def get_import_range(pattern, data_lines):
         import_end_index = import_start_index + 1
 
     return import_start_index, import_end_index
+
+
+def create_import_line(data, module, base_class):
+    classes, comments = get_classes_and_functions(data)
+
+    classes.append(base_class)
+    classes = list(set(modules))
+    classes.sort()      # Cleans up the import to be alphabetical
+
+    result = "from %s import %s" % (module, ", ".join(classes))
+
+    if comments:
+        result += " #%s" % comments
+
+    return result
+

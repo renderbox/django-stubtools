@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 17:14:48
+# @Last Modified time: 2018-11-09 17:58:33
 #--------------------------------------------
 
 import re, os.path
@@ -95,7 +95,6 @@ class Command(AppCommand):
         import_start_index = 0
         import_end_index = 0
         class_func_start = get_classes_and_functions_start(data_lines)
-        # import_line = None
         class_func_end = line_count
 
         # Segment Values
@@ -103,10 +102,13 @@ class Command(AppCommand):
         model_pre_model = None      # between the import line and where the model needs to be added
         model_footer = None         # after the model code
 
-        # import_line = get_pattern_line("^from %(model_class_module)s import (.+)" % render_ctx, data_lines[:class_func_start])  # Returns the index value of where the 
+        modules = []
+        comments = ""
 
         import_start_index, import_end_index = get_import_range("^from %(model_class_module)s import (.+)" % render_ctx, data_lines[:class_func_start])
 
+        if import_start_index > import_end_index:
+            modules, comments = get_classes_and_functions(data_lines[import_start_index])
 
         #######################
         # RENDER THE TEMPLATES

@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 17:50:05
+# @Last Modified time: 2018-11-09 18:13:12
 #--------------------------------------------
 
 import re, os.path
@@ -191,8 +191,7 @@ class Command(AppCommand):
         # Establish the Segments
         import_start_index = 0
         import_end_index = 0
-        import_line = None
-        class_func_start = line_count
+        class_func_start = get_classes_and_functions_start(data_lines)
         class_func_end = line_count
 
         # Segment Values
@@ -200,50 +199,12 @@ class Command(AppCommand):
         pre_view = None
         post_view = None
 
-        # 1) Find where Classes and Functions start
-
-        class_func_start = get_classes_and_functions_start(data_lines)     # Figure out where to search up to
-
-        modules = []
-
         import_start_index, import_end_index = get_import_range("^from %(view_class_module)s import (.+)" % render_ctx, data_lines[:class_func_start])
-
-        if import_start_index > import_end_index:
-            import_line = import_start_index
-        else:
-            import_line = None
-
-        # import_line = get_pattern_line("^from %(view_class_module)s import (.+)" % render_ctx, data_lines[:class_func_start])  # Returns the index value of where the 
         
-        comments = ""
-
-        if import_line:
-            modules, comments = get_classes_and_functions(data_lines[import_line])
-
-        modules.append(render_ctx['view_class'])
-        modules = list(set(modules))
-        modules.sort()      # Cleans up the import to be alphabetical
-
-        render_ctx['view_import_statement'] = "from %s import %s" % (render_ctx['view_class_module'], ", ".join(modules))
-
-        if comments:
-            render_ctx['view_import_statement'] += " #%s" % comments
-
-        # if not import_line:
-
-        #     if class_func_start > 0:
-        #         import_end_index = class_func_start - 1
-        #     else:
-        #         import_end_index = class_func_start
-
-        #     for c, line in enumerate(data_lines[:class_func_start]):
-        #         if IMPORT_REGEX.findall( line ):
-        #             import_end_index = c       # Make note of the line number
-
-        #     import_line = import_end_index + 1
-        #     class_func_start = import_end_index + 1
-        # else:
-        #     class_func_start = import_line + 1
+        if import_start_index > import_end_index:
+            render_ctx['view_import_statement'] = create_import_line(data_lines[import_start_index], render_ctx['view_class_module'], render_ctx['view_class'])
+        else:
+            render_ctx['view_import_statement'] = "from %(view_class_module)s import %(view_class)s" % render_ctx
 
         # 3) Find where the post_view starts
 
