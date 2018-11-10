@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 10:06:34
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-07 17:39:15
+# @Last Modified time: 2018-11-09 17:52:03
 # --------------------------------------------
 
 import re
@@ -75,3 +75,32 @@ def get_classes_and_functions(line):
     modules = [x.strip() for x in reassembly[0].split(",")]
 
     return modules, comments
+
+
+# def get_last_import_index(data_lines):
+
+
+
+def get_import_range(pattern, data_lines):
+    '''
+    Looks where the import line should be inserted into the file.  Returns the start and end lines (where to slice the segements from).
+    '''
+    length = len(data_lines)
+
+    if length == 0:     # If there is nothing passeed in, return (0,0)
+        return (0, 0)
+
+    import_start_index = get_pattern_line(pattern, data_lines)  # Returns the index value of where the
+
+    if import_start_index == None:                     # If no import...
+
+        for c, line in enumerate(data_lines):
+            if IMPORT_REGEX.findall( line ):
+                import_end_index = c       # Make note of the last import's line number
+
+        import_start_index = import_end_index + 1
+        import_end_index = import_end_index + 1
+    else:
+        import_end_index = import_start_index + 1
+
+    return import_start_index, import_end_index

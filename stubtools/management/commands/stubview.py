@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 14:58:16
+# @Last Modified time: 2018-11-09 17:50:05
 #--------------------------------------------
 
 import re, os.path
@@ -18,7 +18,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case, parse_app_input, get_file_lines
 from stubtools.core.prompt import ask_question, ask_yes_no_question, selection_list, horizontal_rule
-from stubtools.core.parse import IMPORT_REGEX, get_classes_and_functions_start, get_pattern_line, get_all_pattern_lines, get_classes_and_functions
+from stubtools.core.parse import IMPORT_REGEX, get_classes_and_functions_start, get_pattern_line, get_all_pattern_lines, get_classes_and_functions, get_import_range
 from stubtools.core.view_classes import VIEW_CLASS_DEFAULT_SETTINGS, VIEW_CLASS_SETTINGS, STUBTOOLS_IGNORE_MODULES
 from stubtools.core.file import write_file
 
@@ -206,7 +206,14 @@ class Command(AppCommand):
 
         modules = []
 
-        import_line = get_pattern_line("^from %(view_class_module)s import (.+)" % render_ctx, data_lines[:class_func_start])  # Returns the index value of where the 
+        import_start_index, import_end_index = get_import_range("^from %(view_class_module)s import (.+)" % render_ctx, data_lines[:class_func_start])
+
+        if import_start_index > import_end_index:
+            import_line = import_start_index
+        else:
+            import_line = None
+
+        # import_line = get_pattern_line("^from %(view_class_module)s import (.+)" % render_ctx, data_lines[:class_func_start])  # Returns the index value of where the 
         
         comments = ""
 
@@ -222,21 +229,21 @@ class Command(AppCommand):
         if comments:
             render_ctx['view_import_statement'] += " #%s" % comments
 
-        if not import_line:
+        # if not import_line:
 
-            if class_func_start > 0:
-                import_end_index = class_func_start - 1
-            else:
-                import_end_index = class_func_start
+        #     if class_func_start > 0:
+        #         import_end_index = class_func_start - 1
+        #     else:
+        #         import_end_index = class_func_start
 
-            for c, line in enumerate(data_lines[:class_func_start]):
-                if IMPORT_REGEX.findall( line ):
-                    import_end_index = c       # Make note of the line number
+        #     for c, line in enumerate(data_lines[:class_func_start]):
+        #         if IMPORT_REGEX.findall( line ):
+        #             import_end_index = c       # Make note of the line number
 
-            import_line = import_end_index + 1
-            class_func_start = import_end_index + 1
-        else:
-            class_func_start = import_line + 1
+        #     import_line = import_end_index + 1
+        #     class_func_start = import_end_index + 1
+        # else:
+        #     class_func_start = import_line + 1
 
         # 3) Find where the post_view starts
 
@@ -254,8 +261,8 @@ class Command(AppCommand):
 
         # 4) Build the sections
 
-        render_ctx['view_pre_import'] = "".join(data_lines[:import_line])
-        render_ctx['view_pre_view'] = "".join(data_lines[class_func_start:class_func_end])
+        render_ctx['view_pre_import'] = "".join(data_lines[:import_start_index])
+        render_ctx['view_pre_view'] = "".join(data_lines[import_end_index:class_func_end])
         render_ctx['view_post_view'] = "".join(data_lines[class_func_end:])
 
         pp = pprint.PrettyPrinter(indent=4)
