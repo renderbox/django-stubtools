@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-10-31 14:00:21
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-08 10:07:43
+# @Last Modified time: 2018-11-09 16:25:09
 # --------------------------------------------
 
 def horizontal_rule(div_char="-", terminal_width=80):
@@ -69,7 +69,7 @@ def selection_list(sel_list, prompt="Make a section", title="Selection", termina
 
     word_width = 1
     margin = 6
-    # count = len(sel_list)     # Can be used later for validation (i.e. selection out of range)
+    count = len(sel_list)     # Can be used later for validation (i.e. selection out of range)
     hr = horizontal_rule()
 
     for sel in sel_list:
@@ -98,6 +98,10 @@ def selection_list(sel_list, prompt="Make a section", title="Selection", termina
             output = ""
 
         output += "%2d) %s%s  " % ( (c + 1), sel, (" " * (word_width - len(sel)) ) )
+
+        if c == count - 1:  # If this is the last entry on the list, print the output
+            print(output)
+
         old_row = row
 
     if exitable:
