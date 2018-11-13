@@ -3,14 +3,14 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 14:50:16
+# @Last Modified time: 2018-11-13 11:29:43
 #--------------------------------------------
 
-from django.core.management.base import AppCommand, CommandError
+from django.core.management.base import CommandError
 import re, os.path
-from stubtools.core import underscore_camel_case
+from stubtools.core import FileAppCommand, underscore_camel_case
 
-class Command(AppCommand):
+class Command(FileAppCommand):
     args = '<app.model_name>'
     help = 'creates stub model form entries'
     class_regex = re.compile(r"class (\w+)\(.+\):")

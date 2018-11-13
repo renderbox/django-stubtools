@@ -120,4 +120,20 @@ def class_path_as_string(cl):
     return  str(cl)[8:-2]
 
 
+class FileAppCommand(AppCommand):
+
+    def write_file(self, file_path, data, create_path=True):
+        full_path = os.path.abspath(file_path)          # Make it a full path to reduce issues in parsing direcotry from file
+        file_directory = os.path.dirname(full_path)
+
+        # Check the directory exists
+        if not os.path.exists(file_directory):
+            # Create the full path if needed
+            os.makedirs(file_directory)
+
+        FILE = open(full_path, "w")
+        FILE.write(data)
+        FILE.close()
+
+
 

@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 13:47:54
+# @Last Modified time: 2018-11-13 11:29:36
 #--------------------------------------------
 
 import os.path
@@ -12,13 +12,14 @@ import inspect
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from django.core.management.base import AppCommand, CommandError
+from django.core.management.base import CommandError
 
+from stubtools.core import FileAppCommand
 from stubtools.core.search import get_first_index, get_last_index, get_first_and_last_index
 from stubtools.core.file import write_file
 
 
-class Command(AppCommand):
+class Command(FileAppCommand):
     args = '<app.model_name>'
     help = 'creates the admin setup for a model class'
     class_regex = re.compile(r"class (\w+)\(.+\):")

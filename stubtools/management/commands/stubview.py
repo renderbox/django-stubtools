@@ -3,27 +3,27 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 18:13:12
+# @Last Modified time: 2018-11-13 11:38:52
 #--------------------------------------------
 
 import re, os.path
 import django
 import pprint
 
-from django.core.management.base import AppCommand, CommandError
+from django.core.management.base import CommandError
 from django.views.generic.base import View
 from django.template.loader import get_template
 
-from jinja2 import Environment, PackageLoader, select_autoescape
+# from jinja2 import Environment, PackageLoader, select_autoescape
 
-from stubtools.core import class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case, parse_app_input, get_file_lines
+from stubtools.core import FileAppCommand, class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case, parse_app_input, get_file_lines
 from stubtools.core.prompt import ask_question, ask_yes_no_question, selection_list, horizontal_rule
 from stubtools.core.parse import IMPORT_REGEX, get_classes_and_functions_start, get_pattern_line, get_all_pattern_lines, get_classes_and_functions, get_import_range
 from stubtools.core.view_classes import VIEW_CLASS_DEFAULT_SETTINGS, VIEW_CLASS_SETTINGS, STUBTOOLS_IGNORE_MODULES
 from stubtools.core.file import write_file
 
 
-class Command(AppCommand):
+class Command(FileAppCommand):
     args = '<app.view.view_class>'
     help = 'creates a template and matching view for the given view name'
     terminal_width = 80
@@ -348,11 +348,11 @@ class Command(AppCommand):
         # print("    URL FILE: %s" % url_file)
         # print("    TEMPLATE FILE: %s" % template_file)
 
-        write_file(view_file, view_result)
-        write_file(url_file, urls_result)
+        self.write_file(view_file, view_result)
+        self.write_file(url_file, urls_result)
 
         # Only write if it does not exist:
         if not os.path.exists(template_file):
-            write_file(template_file, template_results)
+            self.write_file(template_file, template_results)
 
 
