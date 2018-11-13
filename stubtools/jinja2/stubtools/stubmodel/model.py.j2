@@ -1,6 +1,6 @@
 {{ model_header }}
 {{ model_import_statement }}
 {{ model_pre_model }}
-{% if model_name %}class {{ model_name }}({{ model_class }}):{% endif %}
-{% for field in fields %}    {{ field.field_name }} = models.{{ field.field_type }}(_("{{ field.field_name|title }}"){% if field.field_kwargs %}, {% for key, value in field.field_kwargs.items() %}{{ key }}={{ value }} {% endfor %}{% endif %}){% endfor %}
+{% if model_name %}class {{ model }}({{ model_class }}):{% endif %}
+{% for field in attributes %}    {{ field.field_name }} = {{ field.field_type }}(_("{{ field.field_name|title }}"){% if field.field_kwargs %}, {% for key, value in field.field_kwargs.items() %}{{ key }}={{ value }} {% endfor %}{% endif %}){% endfor %}
 {{ model_footer }}
