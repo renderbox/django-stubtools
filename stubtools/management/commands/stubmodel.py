@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-13 12:10:13
+# @Last Modified time: 2018-11-14 10:59:59
 #--------------------------------------------
 
 import re, os.path
@@ -19,7 +19,7 @@ from django.db.models import Model, Field
 
 from stubtools.core import FileAppCommand, underscore_camel_case, import_line_check, class_name, get_all_subclasses, parse_app_input, get_file_lines, split_camel_case
 from stubtools.core.prompt import ask_question, ask_yes_no_question, selection_list, horizontal_rule
-from stubtools.core.parse import get_import_range, get_classes_and_functions_start
+from stubtools.core.parse import get_import_range, get_classes_and_functions_start, get_classes_and_functions
 
 # Fields that are not really meant to be included in the list of useable Model Fields
 EXCLUDED_FIELDS = ['BLANK_CHOICE_DASH', 'Empty', 'Field', 'FieldDoesNotExist', 'NOT_PROVIDED']

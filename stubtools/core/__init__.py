@@ -1,7 +1,12 @@
 import re, os.path
+import ast
+
 from django.core.management.base import AppCommand
 from django.conf import settings
+
 from stubtools.exceptions import NoProjectPathException
+from stubtools.core.ast import ast_parse_code
+
 import django
 
 # Compiled REGEX Patterns
@@ -15,7 +20,6 @@ def get_file_lines(file_name):
         FILE.close()
         return data_lines
     return []
-
 
 def parse_app_input(app_view, expected_parts=3):
     parts = app_view.split(".")  # split the app and views
@@ -120,6 +124,10 @@ def class_path_as_string(cl):
     return  str(cl)[8:-2]
 
 
+#############
+# Base Class
+#############
+
 class FileAppCommand(AppCommand):
 
     def write_file(self, file_path, data, create_path=True):
@@ -135,5 +143,13 @@ class FileAppCommand(AppCommand):
         FILE.write(data)
         FILE.close()
 
-
+    def parse_code(self, data):
+        '''
+        This is a tool that will return information about the Python code handed to it.
+        It can be used by tools to figure out where the last line of code is and where import
+        lines exist.  This is working to replace the use of regex to parse files.
+        '''
+        # Create the AST Tree and parse it
+        tree = ast.parse(data)
+        return ast_parse_code(tree)
 
