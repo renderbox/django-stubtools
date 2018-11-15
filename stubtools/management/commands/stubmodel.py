@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-15 12:02:36
+# @Last Modified time: 2018-11-15 12:07:43
 #--------------------------------------------
 
 import os.path
@@ -102,9 +102,9 @@ class Command(FileAppCommand):
         line_count = len(data_lines)
         structure = self.parse_code("".join(data_lines))
 
-        print( horizontal_rule() )
-        print("FILE STRUCTURE (%s):" % model_file)
-        self.pp.pprint(structure)
+        # print( horizontal_rule() )
+        # print("FILE STRUCTURE (%s):" % model_file)
+        # self.pp.pprint(structure)
 
         # check to see if the model is already in models.py
         if model in structure['class_list']:
@@ -150,16 +150,16 @@ class Command(FileAppCommand):
         # RENDER THE TEMPLATES
         #######################
 
-        print( horizontal_rule() )
-        print("RENDER CONTEXT:")
-        self.pp.pprint(render_ctx)
+        # print( horizontal_rule() )
+        # print("RENDER CONTEXT:")
+        # self.pp.pprint(render_ctx)
 
         model_template = get_template('stubtools/stubmodel/model.py.j2', using='jinja2')
         model_result = model_template.render(context=render_ctx)
 
-        print( horizontal_rule() )
-        print("models.py RESULT:")
-        print(model_result)
+        # print( horizontal_rule() )
+        # print("models.py RESULT:")
+        # print(model_result)
 
-        # self.write_file(model_file, model_result)
+        self.write_file(model_file, model_result)
 
