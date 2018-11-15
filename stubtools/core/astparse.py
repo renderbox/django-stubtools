@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-14 15:34:48
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-14 16:07:46
+# @Last Modified time: 2018-11-15 11:23:56
 # --------------------------------------------
 
 import ast
@@ -23,7 +23,7 @@ def ast_parse_code(tree):
     result['first_line'] = ast_first_line_number(tree)
     result['last_line'] = ast_last_line_number(tree)
 
-    for node in tree.body():
+    for node in tree.body:
         if isinstance(node, ast.ImportFrom):
             result['imports'].append( ast_parse_import(node) )
         if isinstance(node, ast.FunctionDef):
@@ -32,11 +32,37 @@ def ast_parse_code(tree):
             result['classes'].append( ast_parse_class(node) )
 
     # Determine the first and last import lines
+    result['first_import_line'], result['last_import_line'] = ast_first_and_last_line(result['imports'])
 
     # Determine the first and last class/function lines
+    result['first_function_line'], result['last_function_line'] = ast_first_and_last_line(result['functions'])
+    result['first_class_line'], result['last_class_line'] = ast_first_and_last_line(result['classes'])
+
+    code = []
+    code.extend(result['functions'])
+    code.extend(result['classes'])
+
+    result['first_code_line'], result['last_code_line'] = ast_first_and_last_line(code)
+
+    result['from_list'] = [ f['from'] for f in result['imports'] ]      # Used to see if a line is already imported
+    result['function_list'] = [ f['name'] for f in result['functions'] ]      # Used to see if a line is already imported
+    result['class_list'] = [ f['name'] for f in result['classes'] ]      # Used to see if a line is already imported
 
     return result
 
+def ast_first_and_last_line(items):
+    first = 0
+    last = 0
+
+    if items:
+        for item in items:
+            if first == 0 or item['first_line'] < first:
+                first = item['first_line']
+
+            if last == 0 or item['last_line'] > last:
+                last = item['last_line']
+
+    return first, last
 
 def ast_parse_defaults(node):
     '''
@@ -52,8 +78,8 @@ def ast_parse_defaults(node):
 
 def ast_parse_import(node):
     result = ast_parse_defaults(node)
-    result['name'] = node.module
-    result['imports'] = [x.name for x in imp.names]
+    result['from'] = node.module
+    result['import'] = [x.name for x in node.names]
     return result
 
 
@@ -131,102 +157,6 @@ def ast_parse_arg_defaults(node):
         return node.n
     else:
         return None
-
-
-
-
-# def parse_code(text):
-#     '''
-#     This is a tool that will return information about the Python code handed to it.
-#     It can be used by tools to figure out where the last line of code is and where import
-#     lines exist.  This is working to replace the use of regex to parse files.
-#     '''
-#     tree = ast.parse(text)
-
-#     result = {'imports':[], 'functions':[], 'classes':[], 'tree':tree}
-
-#     result['first_line'] = get_first_line_number(tree)
-#     result['last_line'] = get_last_line_number(tree)
-
-#     for node in tree.body:
-#         if isinstance(node, ast.ImportFrom):
-#             result['imports'].append( parse_import(node) )
-#         if isinstance(node, ast.FunctionDef):
-#             result['functions'].append( parse_function(node) )
-#         if isinstance(node, ast.ClassDef):
-#             result['classes'].append( parse_class(node) )
-
-#     return result
-
-# def parse_defaults(tree):
-#     '''
-#     Things each node needs to have
-#     '''
-#     result = {}
-#     result['tree'] = tree
-#     result['first_line'] = get_first_line_number(tree)
-#     result['last_line'] = get_last_line_number(tree)
-
-#     return result
-
-# def parse_import(tree):
-#     result = parse_defaults(tree)
-#     result['name'] = tree.module
-#     result['imports'] = [x.name for x in imp.names]
-#     return result
-
-# def parse_class(tree):
-#     result = parse_defaults(tree)
-#     result['name'] = tree.name
-#     result['inheritence_chain'] = get_class_inheritence_chain(tree)
-#     return result
-
-# def parse_function(tree):
-#     result = parse_defaults(tree)
-#     result['name'] = tree.name
-#     # result['args'] = tree.args.args
-#     # result['kwargs'] = tree.args.kwarg
-#     return result
-
-# def get_class_inheritence_chain(tree):
-#     result = []
-#     for base in tree.bases:
-#         if hasattr(base, 'id'):
-#             result.append(base.id)
-#         else:
-#             result.append(base.value.id + "." + base.attr)
-#     return result
-
-
-# def parse_args(tree):
-#     '''
-#     Parses the args passed into a function
-#     '''
-#     result = {'args':[], 'kwargs':[]}
-#     args = tree.args.args
-#     defaults = tree.args.defaults
-
-#     dlen = len(defaults)
-
-#     if dlen:
-#         result['args'] = [a.arg for a in args[:-1 * dlen]]
-#         result['kwargs'] = [{a.arg:get_default(b)} for a, b in zip(args[-1 * dlen:], defaults)]
-#     else:
-#         result['args'] = [a.arg for a in args]
-
-#     return result
-
-# def get_default(tree):
-#     '''
-#     Going to have to update different value types as they are figured out.
-#     '''
-#     if hasattr(tree, 's'):
-#         return tree.s
-#     elif hasattr(tree, 'n'):
-#         return tree.n
-#     else:
-#         return None
-
 
 
 '''

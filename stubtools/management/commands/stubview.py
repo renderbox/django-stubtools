@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-14 16:10:28
+# @Last Modified time: 2018-11-14 16:13:30
 #--------------------------------------------
 
 import re, os.path
@@ -187,7 +187,6 @@ class Command(FileAppCommand):
         # Slice and Dice!
         data_lines = get_file_lines(view_file)
         line_count = len(data_lines)
-        structure = self.parse_code("".join(data_lines))
 
         # Establish the Segments
         import_start_index = 0

@@ -5,7 +5,7 @@ from django.core.management.base import AppCommand
 from django.conf import settings
 
 from stubtools.exceptions import NoProjectPathException
-from stubtools.core.ast import ast_parse_code
+from stubtools.core.astparse import ast_parse_code
 
 import django
 
@@ -152,4 +152,26 @@ class FileAppCommand(AppCommand):
         # Create the AST Tree and parse it
         tree = ast.parse(data)
         return ast_parse_code(tree)
+
+
+    def create_import_line(self, module, path=None, modules=[], comment=None, sort=False):
+        mod_list = []                   # Start with just the required
+        mod_list.extend(modules)        # Add the other modules to the list
+
+        if module not in mod_list:
+            mod_list.append(module)
+
+        if sort:
+            mod_list.sort()             # Sort the modules
+
+        if path:
+            result = "from %s import %s" % ( path, ", ".join(mod_list) )
+        else:
+            result = "import %s" % ( ", ".join(mod_list) )
+
+        if comment:
+            result += "    # %s" % comment
+
+        return result
+
 

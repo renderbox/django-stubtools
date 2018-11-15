@@ -3,10 +3,11 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-14 10:59:59
+# @Last Modified time: 2018-11-15 12:02:36
 #--------------------------------------------
 
-import re, os.path
+import os.path
+# import re
 # import inspect
 import pprint
 
@@ -29,12 +30,7 @@ EXCLUDED_FIELDS = ['BLANK_CHOICE_DASH', 'Empty', 'Field', 'FieldDoesNotExist', '
 class Command(FileAppCommand):
     args = '<app.model_name>'
     help = 'creates stub Templates, Forms and Admin entries for a given model name'
-    import_line_regex = re.compile(r"^from django.db import (.+)", re.MULTILINE)
-    import_uget_regex = re.compile(r"^from django.utils.translation import (.+)", re.MULTILINE)
-    imports_regex = re.compile(r"(import|from)")
-    class_regex = re.compile(r"class (\w+)\(.+\):")
-    func_regex = re.compile(r"(def|class)")
-
+    pp = pprint.PrettyPrinter(indent=4)
 
     def handle(self, *args, **kwargs):
 
@@ -68,7 +64,7 @@ class Command(FileAppCommand):
         model_name = "_".join(split_camel_case(model)).lower()
 
         render_ctx = {'app':app, 'model_key':model_key, 'model':model, 'model_name':model_name, 'attributes':[],
-                        'model_header':"", 'model_import_statement':"", 'model_pre_model':"", 'model_footer':"" }
+                        'model_header':"", 'model_import_statement':"", 'model_body':"", 'model_footer':"" }
 
         # if not model_class:?
 
@@ -89,8 +85,6 @@ class Command(FileAppCommand):
 
     def process(self, app_model, *args, **kwargs):
 
-        pp = pprint.PrettyPrinter(indent=4)
-
         app, model, model_class = parse_app_input(app_model)
 
         model_file = os.path.join(app, "models.py")
@@ -106,44 +100,51 @@ class Command(FileAppCommand):
         # Slice and Dice!
         data_lines = get_file_lines(model_file)
         line_count = len(data_lines)
+        structure = self.parse_code("".join(data_lines))
+
+        print( horizontal_rule() )
+        print("FILE STRUCTURE (%s):" % model_file)
+        self.pp.pprint(structure)
+
+        # check to see if the model is already in models.py
+        if model in structure['class_list']:
+            print("Model already in '%s', skipping creation" % model_file)
+            return
 
         # Establish the Segments
-        import_start_index = 0
-        import_end_index = 0
-        class_func_start = get_classes_and_functions_start(data_lines)
-        class_func_end = line_count
+        if structure['first_import_line']:
+            # import_start_index = structure['first_import_line'] - 1
+            body_start_index = structure['last_import_line']
+            header_end_index = body_start_index
+        else:
+            # import_start_index = 0
+            body_start_index = 0
+            header_end_index = body_start_index
+
+        if structure['first_code_line']:
+            body_end_index = structure['last_code_line']      # Get the last line of code as an index value
+        else:
+            body_end_index = body_start_index + 1
+
+        footer_start_index = body_end_index
+
+        modules = []        # List of other modules being loaded
+        comment = None
+
+        # Check to see if the needed 'from' module is already being loaded.  If so, adjust where the header ends and the body starts
+        if render_ctx['model_class_module'] in structure['from_list']:
+            i = structure['from_list'].index(render_ctx['model_class_module'])
+            import_info = structure['imports'][i]
+            modules = import_info['import']
+            import_lineno = import_info['first_line']
+            header_end_index = import_lineno - 1
+            body_start_index = import_lineno
 
         # Segment Values
-        # model_header = None         # In between the first line and the module import
-        # model_pre_model = None      # between the import line and where the model needs to be added
-        # model_footer = None         # after the model code
-
-        modules = []
-        comments = ""
-
-        import_start_index, import_end_index = get_import_range("^from %(model_class_module)s import (.+)" % render_ctx, data_lines[:class_func_start])
-
-        if import_start_index != import_end_index:  # If they are not the same, the import line already exists in the file
-            modules, comments = get_classes_and_functions(data_lines[import_start_index])
-
-        modules.append(render_ctx['model_class_import'])
-
-        render_ctx['model_import_statement'] = "from %s import %s" % (render_ctx['model_class_module'], ', '.join(modules) )
-
-        if comments:
-            render_ctx['model_import_statement'] += "# " + comments
-
-        if import_start_index > 0:
-            render_ctx['model_header'] = "".join(data_lines[:url_import_line])
-        else:
-            render_ctx['model_header'] = ""
-
-        # Parts to parse and add to the context
-        # render_ctx['model_header']
-        # render_ctx['model_import_statement']
-        # {{ model_pre_model }}
-        # # MODEL STUFF
-        # {{ model_footer }}
+        render_ctx['model_import_statement'] = self.create_import_line(render_ctx['model_class_import'], path=render_ctx['model_class_module'], modules=modules, comment=comment)
+        render_ctx['model_header'] = "".join(data_lines[:header_end_index])         # In between the first line and the module import
+        render_ctx['model_body'] = "".join(data_lines[body_start_index:body_end_index])      # between the import line and where the model needs to be added
+        render_ctx['model_footer'] = "".join(data_lines[footer_start_index:])         # after the model code
 
         #######################
         # RENDER THE TEMPLATES
@@ -151,77 +152,14 @@ class Command(FileAppCommand):
 
         print( horizontal_rule() )
         print("RENDER CONTEXT:")
-        pp.pprint(render_ctx)
-        print( horizontal_rule() )
+        self.pp.pprint(render_ctx)
 
         model_template = get_template('stubtools/stubmodel/model.py.j2', using='jinja2')
         model_result = model_template.render(context=render_ctx)
 
+        print( horizontal_rule() )
         print("models.py RESULT:")
         print(model_result)
 
-        # # LOAD FILE
-        # if os.path.isfile( model_file ):
-        #     try:
-        #         FILE = open( model_file, "r")
-        #         data = FILE.read()
-
-        #         if not import_line_check(self.import_line_regex, data, 'models'):
-        #             new_lines.append("from django.db import models")
-
-        #         if not import_line_check(self.import_uget_regex, data, 'ugettext_lazy as _'):
-        #             new_lines.append("from django.utils.translation import ugettext_lazy as _")
-
-        #         classes = self.class_regex.findall( data )
-        #         FILE.close()
-
-        #     except IOError as e:
-        #         print("IO ERROR, CONTINUE")
-        #         pass                    # May need to add something here
-        #                                 # to handle a file locking issue
-        # else:
-        #     print( "File Not Found: %s" % model_file )
-        #     return
-
-        # # LOOK FOR CLASS WITH NAME
-        # if model in classes:
-        #     print('Model Exists: %s' % model)
-        #     return
-
-        # if not import_entry:
-        #     lines = []
-        #     for m in re.finditer( self.func_regex, data ):
-        #         lines.append( data.count("\n",0,m.start())+1 )
-
-        #     if lines:
-        #         lines.sort()
-        #         first_class_line = lines[0]
-
-        #     lines = []
-        #     for m in re.finditer( self.imports_regex, data ):
-        #         lineno = data.count("\n",0,m.start())+1
-        #         if lineno < first_class_line:
-        #             lines.append(lineno)
-        #     if lines:
-        #         lines.sort()
-        #         last_import_line = lines[-1]
-
-        # # Process the templates
-        # print('Creating Model: %s' % model)
-
-        # model_template = get_template('stubtools/stubmodel/models.py.j2', using='jinja2')
-
-        # # ADD THE MODEL TO THE LINES
-        # render_ctx['model_name'] = model
-        # render_ctx['fields'] = [{'field_name':"name", 'field_type':"CharField", 'field_kwargs':{'max_length':300}}]
-
-        # new_lines.append( model_template.render(context=render_ctx) )
-
-        # mf = open( model_file, "a" )
-        # # NEEDS TO LOAD AND REWRITE THE FILE RATHER THAN JUST APPEND
-        # mf.write( "\n".join(new_lines) )
-        # mf.close()
-
-        # model_results = "\n".join(new_lines)
-        # self.write_file(model_file, model_results)
+        # self.write_file(model_file, model_result)
 
