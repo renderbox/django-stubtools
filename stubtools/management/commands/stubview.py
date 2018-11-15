@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-14 15:40:40
+# @Last Modified time: 2018-11-14 16:10:28
 #--------------------------------------------
 
 import re, os.path
@@ -223,9 +223,9 @@ class Command(FileAppCommand):
 
         # 4) Build the sections
 
-        render_ctx['view_pre_import'] = "".join(data_lines[:import_start_index])
+        render_ctx['view_header'] = "".join(data_lines[:import_start_index])
         render_ctx['view_pre_view'] = "".join(data_lines[import_end_index:class_func_end])
-        render_ctx['view_post_view'] = "".join(data_lines[class_func_end:])
+        render_ctx['view_footer'] = "".join(data_lines[class_func_end:])
 
         pp = pprint.PrettyPrinter(indent=4)
 

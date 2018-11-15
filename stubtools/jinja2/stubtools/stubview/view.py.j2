@@ -1,4 +1,4 @@
-{{ view_pre_import }}{{ view_import_statement }}{% if view_pre_view %}
+{{ view_header }}{{ view_import_statement }}{% if view_pre_view %}
 {{ view_pre_view }}{% else %}
 
 
@@ -23,4 +23,4 @@ class {{ page_class }}({{ view_class }}):{% if description %}
     {% for key, value in attributes.items() %}{{ key }} = {{ value }}
     {% endfor %}
 {% endif %}
-{{ view_post_view }}
+{{ view_footer }}
