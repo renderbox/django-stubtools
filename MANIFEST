@@ -2,6 +2,7 @@
 setup.cfg
 setup.py
 stubtools/__init__.py
+stubtools/jinja2.py
 stubtools/core/__init__.py
 stubtools/management/__init__.py
 stubtools/management/commands/__init__.py
