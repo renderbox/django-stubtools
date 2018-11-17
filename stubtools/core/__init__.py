@@ -4,7 +4,6 @@ import ast
 from django.core.management.base import AppCommand
 from django.conf import settings
 
-from stubtools.exceptions import NoProjectPathException
 from stubtools.core.astparse import ast_parse_code
 
 import django
