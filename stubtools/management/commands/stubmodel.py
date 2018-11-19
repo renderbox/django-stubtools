@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-15 12:07:43
+# @Last Modified time: 2018-11-19 11:01:50
 #--------------------------------------------
 
 import os.path
@@ -37,13 +37,14 @@ class Command(FileAppCommand):
         # batch process app models
         try:
             for app_model in args:
-                self.process(app_model, *args, **kwargs)
+                app, model, model_class = parse_app_input(app_model)    # Broken out so process's can be chained
+                self.process(app, model, model_class)
         except KeyboardInterrupt:
             print("\nExiting...")
             return
 
 
-    def get_context(self, app, model, model_class):
+    def get_context(self, app, model, model_class, context={}):
 
         # model_classes = get_all_subclasses(Model, ignore_modules=['django.contrib.contenttypes.models', 'django.contrib.admin.models', 'django.contrib.sessions'])
         model_classes = ['django.db.models.Model', 'django.contrib.auth.models.AbstractUser']
@@ -64,9 +65,27 @@ class Command(FileAppCommand):
         model_name = "_".join(split_camel_case(model)).lower()
 
         render_ctx = {'app':app, 'model_key':model_key, 'model':model, 'model_name':model_name, 'attributes':[],
-                        'model_header':"", 'model_import_statement':"", 'model_body':"", 'model_footer':"" }
+                        'model_header':"", 'model_import_statement':"", 'model_body':"", 'model_footer':"", 'create_model':True }
 
-        # if not model_class:?
+        if context:
+            print(context)
+            render_ctx.update(context)
+
+        # Creating a model can create a cascade of views that are needed
+        render_ctx['create_model_admin'] = ask_yes_no_question("Create an Admin Entry?", default=True, required=True)
+        render_ctx['create_model_form'] = ask_yes_no_question("Create a matching Model Form?", default=True, required=True)
+        render_ctx['create_model_views'] = ask_yes_no_question("Create a Matching Model Views?", default=True, required=True)
+
+        if render_ctx['create_model_views']:
+            render_ctx['create_model_detail'] = ask_yes_no_question("Create a Model Detail View?", default=True, required=True)
+        #     render_ctx['create_model_list'] = ask_yes_no_question("Create a Model List View?", default=True, required=True)
+        #     render_ctx['create_model_create'] = ask_yes_no_question("Create a Model Create View?", default=render_ctx['create_model_form'], required=True)
+        #     render_ctx['create_model_edit'] = ask_yes_no_question("Create a Model Edit View?", default=render_ctx['create_model_form'], required=True)
+        #     render_ctx['create_model_delete'] = ask_yes_no_question("Create a Model Delete View?", default=True, required=True)
+
+        # In this case, load the other commands and give them settings
+
+        # REST APIs?
 
         # Need to replace this with a settings file
         if render_ctx['model_key'] == "django.db.models.Model":
@@ -83,15 +102,15 @@ class Command(FileAppCommand):
 
         return render_ctx
 
-    def process(self, app_model, *args, **kwargs):
-
-        app, model, model_class = parse_app_input(app_model)
+    def process(self, app, model, model_class, context={}):
 
         model_file = os.path.join(app, "models.py")
 
         print("MODEL FILE: %s" % model_file)
+        print("CONTEXT")
+        print(context)
 
-        render_ctx = self.get_context(app, model, model_class)
+        render_ctx = self.get_context(app, model, model_class, context=context)
 
         # #######################
         # # PARSE models.py
@@ -107,9 +126,12 @@ class Command(FileAppCommand):
         # self.pp.pprint(structure)
 
         # check to see if the model is already in models.py
-        if model in structure['class_list']:
-            print("Model already in '%s', skipping creation" % model_file)
-            return
+        if render_ctx['model'] in structure['class_list']:
+            print("%s model already in '%s', skipping creation" % (render_ctx['model'], model_file))
+            render_ctx['create_model'] = False
+        else:
+            print(model)
+            print(structure['class_list'])
 
         # Establish the Segments
         if structure['first_import_line']:
@@ -157,9 +179,21 @@ class Command(FileAppCommand):
         model_template = get_template('stubtools/stubmodel/model.py.j2', using='jinja2')
         model_result = model_template.render(context=render_ctx)
 
-        # print( horizontal_rule() )
-        # print("models.py RESULT:")
-        # print(model_result)
+        if render_ctx['create_model']:
+            self.write_file(model_file, model_result)
+        # else:
+        #     print( horizontal_rule() )
+        #     print("models.py RESULT:")
+        #     print(model_result)
 
-        self.write_file(model_file, model_result)
+        # This lets the uer create new views to match
+
+        if render_ctx['create_model_views']:
+            from stubtools.management.commands.stubview import Command as ViewCommand
+
+            if render_ctx['create_model_detail']:
+                vc = ViewCommand()
+                # app_args = '.'.join([app, render_ctx['model_name'], "DetailView"])
+                print("APP ARGS: creating a '%s' for model '%s' in app '%s'" % ("DetailView", app, render_ctx['model_name']) )
+                vc.process(app, render_ctx['model_name'], "DetailView")
 

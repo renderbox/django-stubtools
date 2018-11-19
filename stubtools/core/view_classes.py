@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 14:09:40
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 10:47:16
+# @Last Modified time: 2018-11-19 10:53:42
 # --------------------------------------------
 
 
@@ -90,12 +90,6 @@ VIEW_CLASS_SETTINGS = {
                 'required': False,
                 "default": "object",
                 "ignore_default": True,
-            },
-            {
-                "question": "Which Form do you want to use?",
-                "key": "form_class",
-                'required': True,
-                "default": "%(model)sForm",
             },
         ],
         "class_name": "DetailView",

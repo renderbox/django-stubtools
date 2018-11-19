@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-14 16:13:30
+# @Last Modified time: 2018-11-19 11:06:45
 #--------------------------------------------
 
 import re, os.path
@@ -35,17 +35,20 @@ class Command(FileAppCommand):
         # batch process app views
         try:
             for app_view in args:
-                self.process(app_view, *args, **kwargs)
+                # SPLIT THE APP, VIEW AND VIEW_CLASS
+                app, view, view_class = parse_app_input(app_view)
+                self.process(app, view, view_class)
         except KeyboardInterrupt:
             print("\nExiting...")
             return
 
-    def get_context(self, app, view, view_class):
+    def get_context(self, app, view, view_class, starter_ctx={}):
 
         # Load the classes each time so they can be made to include views that were previously created
         view_classes = get_all_subclasses(View, ignore_modules=STUBTOOLS_IGNORE_MODULES)
         view_class_settings = {}
         view_class_settings.update(VIEW_CLASS_SETTINGS)     # Update the setting dict with defaults
+        view_class_shortname_map = dict([(v['class_name'], k) for k, v in VIEW_CLASS_SETTINGS.items()])
 
         # Update the VIEW_CLASS_SETTINGS module value
         for cl in view_classes:
@@ -63,7 +66,8 @@ class Command(FileAppCommand):
 
         # PICK THE VIEW CLASS TO USE BASED ON A LIST OF AVAILABLE CLASSES IF NOT SET IN THE COMMAND LINE
         if not view_class:
-            view_key = selection_list(list(view_class_settings.keys()), as_string=True)
+            view_short_key = selection_list(list( view_class_shortname_map.keys() ), as_string=True)
+            view_key = view_class_shortname_map[view_short_key]
 
         view_class = view_class_settings[view_key]['class_name']
 
@@ -79,6 +83,8 @@ class Command(FileAppCommand):
         render_ctx = {'app':app, 'view':view, 'view_name':view_name, 'views':[],
                         'view_class':view_class, 'attributes':{}, 
                         'view_class_module': view_class_settings[view_key]['module'] }
+
+        render_ctx.update(starter_ctx)  # Update with any context info passed in.
 
         attr_ctx = {'app_label': app, 'view_name':view_name}
 
@@ -105,10 +111,14 @@ class Command(FileAppCommand):
         queries.extend(default_queries)
 
         for query in queries:
+            key = query['key']
+
+            if key in starter_ctx:   # Don't ask the question if an answer is already provided (usually from chaining).
+                continue
+
             default = query.get("default", None)
             ignore_default = query.get("ignore_default", False)
 
-            key = query['key']
 
             # Update the attribute context with the results of render_ctx['attributes'] before creating the default value
             attr_ctx.update(render_ctx['attributes'])
@@ -165,12 +175,9 @@ class Command(FileAppCommand):
 
         return render_ctx
 
-    def process(self, app_view, *args, **kwargs):
+    def process(self, app, view, view_class, starter_ctx={}):
 
-        # SPLIT THE APP, VIEW AND VIEW_CLASS
-        app, view, view_class = parse_app_input(app_view)
-
-        render_ctx = self.get_context(app, view, view_class)
+        render_ctx = self.get_context(app, view, view_class, starter_ctx=starter_ctx)
 
         view_file = os.path.join(app, "views.py")
         url_file = os.path.join(app, "urls.py")
