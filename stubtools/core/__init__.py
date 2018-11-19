@@ -103,7 +103,7 @@ def version_check(mode="gte", vcheck="0.0.0"):
 
     return False
 
-
+# todo: Fix an issue where Models that are joined through a ManyToMany, ForeignKey fields are returned as well.
 def get_all_subclasses(cls, ignore_modules=[]):
     all_subclasses = []
     ignore_list = tuple([ "<class '" + v for v in ignore_modules ])
@@ -173,4 +173,26 @@ class FileAppCommand(AppCommand):
 
         return result
 
+
+    def get_class_settings(self, root_class, ignore_modules=[], settings={}):
+
+        classes = get_all_subclasses(root_class, ignore_modules=ignore_modules)
+
+        result = {}
+        result.update(settings)
+
+        for cl in classes:
+            class_name = cl.__name__    # Get the short name for the class
+            view_key = cl.__module__ + "." + class_name
+
+            if view_key not in result:
+                result[view_key] = {}
+
+            if not 'module' in result[view_key]:                 # Only if not specified already in the settings
+                result[view_key]['module'] = cl.__module__       # Set the module to the full import path
+
+            if not 'class_name' in result[view_key]:             # Only if not specified already in the settings
+                result[view_key]['class_name'] = class_name      # Set the module to the full import path
+
+        return result
 

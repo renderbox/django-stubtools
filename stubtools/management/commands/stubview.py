@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 11:06:45
+# @Last Modified time: 2018-11-19 15:23:56
 #--------------------------------------------
 
 import re, os.path
@@ -36,40 +36,32 @@ class Command(FileAppCommand):
         try:
             for app_view in args:
                 # SPLIT THE APP, VIEW AND VIEW_CLASS
-                app, view, view_class = parse_app_input(app_view)
-                self.process(app, view, view_class)
+                app, view, setting_key = parse_app_input(app_view)
+                self.process(app, view, setting_key=setting_key)
         except KeyboardInterrupt:
             print("\nExiting...")
             return
 
-    def get_context(self, app, view, view_class, starter_ctx={}):
 
-        # Load the classes each time so they can be made to include views that were previously created
-        view_classes = get_all_subclasses(View, ignore_modules=STUBTOOLS_IGNORE_MODULES)
-        view_class_settings = {}
-        view_class_settings.update(VIEW_CLASS_SETTINGS)     # Update the setting dict with defaults
-        view_class_shortname_map = dict([(v['class_name'], k) for k, v in VIEW_CLASS_SETTINGS.items()])
+    def get_context(self, app, view, setting_key=None, model=None, **kwargs):
 
-        # Update the VIEW_CLASS_SETTINGS module value
-        for cl in view_classes:
-            class_name = cl.__name__    # Get the short name for the class
-            view_key = cl.__module__ + "." + class_name
+        starter_ctx = kwargs
+        starter_ctx['model'] = model
 
-            if view_key not in view_class_settings:
-                view_class_settings[view_key] = {}
-
-            if not 'module' in view_class_settings[view_key]:                 # Only if not specified already in the settings
-                view_class_settings[view_key]['module'] = cl.__module__       # Set the module to the full import path
-
-            if not 'class_name' in view_class_settings[view_key]:             # Only if not specified already in the settings
-                view_class_settings[view_key]['class_name'] = class_name      # Set the module to the full import path
+        view_class_settings = self.get_class_settings(View, ignore_modules=STUBTOOLS_IGNORE_MODULES, settings=VIEW_CLASS_SETTINGS)      # todo: move this over to a settings option
+        view_class_shortname_map = dict([(v['class_name'], k) for k, v in view_class_settings.items()])
 
         # PICK THE VIEW CLASS TO USE BASED ON A LIST OF AVAILABLE CLASSES IF NOT SET IN THE COMMAND LINE
-        if not view_class:
+        if not setting_key:
             view_short_key = selection_list(list( view_class_shortname_map.keys() ), as_string=True)
-            view_key = view_class_shortname_map[view_short_key]
+            setting_key = view_class_shortname_map[view_short_key]
 
-        view_class = view_class_settings[view_key]['class_name']
+        if setting_key:
+            print("\nUsing Module Setting for '%s'" % setting_key)
+
+        view_class = view_class_settings[setting_key]['class_name']
+
+        # print("View Class: %s" % view_class)
 
         if not view:
             default = "My%s" % view_class
@@ -82,33 +74,40 @@ class Command(FileAppCommand):
 
         render_ctx = {'app':app, 'view':view, 'view_name':view_name, 'views':[],
                         'view_class':view_class, 'attributes':{}, 
-                        'view_class_module': view_class_settings[view_key]['module'] }
+                        'view_class_module': view_class_settings[setting_key]['module'] }
 
         render_ctx.update(starter_ctx)  # Update with any context info passed in.
 
         attr_ctx = {'app_label': app, 'view_name':view_name}
 
         key_remove_attr_list = []   # This is so defaults are available while the questioning is going on so defaults can be applied to other attrs.
-        render_ctx['template_in_app'] = ask_yes_no_question("Place templates at the app level?", default=True, required=True)
-        render_ctx['constructor_template'] = view_class_settings[view_key].get("template", VIEW_CLASS_DEFAULT_SETTINGS['template'])
+
+        if not 'template_in_app' in starter_ctx:
+            render_ctx['template_in_app'] = ask_yes_no_question("Place templates at the app level?", default=True, required=True)
+
+        render_ctx['constructor_template'] = view_class_settings[setting_key].get("template", VIEW_CLASS_DEFAULT_SETTINGS['template'])
 
         ################
         # QUERIES:
         # Query the user to build the attribute values
 
+        # print(setting_key)
+
         queries = []
-        queries.extend(view_class_settings[view_key].get("queries", []))
+        queries.extend(view_class_settings[setting_key].get("queries", []))
 
         default_queries = []
         default_queries.extend(VIEW_CLASS_DEFAULT_SETTINGS['queries'])
 
-        default_values = view_class_settings[view_key].get("default_values", {})
+        default_values = view_class_settings[setting_key].get("default_values", {})
 
         for item in default_queries:
             if item['key'] in default_values:
                 item['default'] = default_values[item['key']]
 
         queries.extend(default_queries)
+
+        # print(queries)
 
         for query in queries:
             key = query['key']
@@ -122,6 +121,11 @@ class Command(FileAppCommand):
 
             # Update the attribute context with the results of render_ctx['attributes'] before creating the default value
             attr_ctx.update(render_ctx['attributes'])
+
+            if model:       # If a model is explicitly passed in to the method, use that value
+                attr_ctx['model'] = model
+                render_ctx['model'] = model
+
             if 'model' in attr_ctx:
                 attr_ctx['model_name'] = "_".join(split_camel_case(attr_ctx['model'])).lower()
 
@@ -150,7 +154,7 @@ class Command(FileAppCommand):
         for key in key_remove_attr_list:
             del render_ctx['attributes'][key]
 
-        view_suffix = view_class_settings[view_key].get("view_suffix", "View")     # Given the view type, there is a common convention for appending to the name of the "page's" View's Class
+        view_suffix = view_class_settings[setting_key].get("view_suffix", "View")     # Given the view type, there is a common convention for appending to the name of the "page's" View's Class
 
         render_ctx['description'] = ask_question("Did you want to add a quick description?")
 
@@ -175,9 +179,11 @@ class Command(FileAppCommand):
 
         return render_ctx
 
-    def process(self, app, view, view_class, starter_ctx={}):
+    def process(self, app, view, view_class, model=None, **kwargs):
 
-        render_ctx = self.get_context(app, view, view_class, starter_ctx=starter_ctx)
+        starter_ctx = kwargs
+
+        render_ctx = self.get_context(app, view, view_class, model=model, **kwargs)
 
         view_file = os.path.join(app, "views.py")
         url_file = os.path.join(app, "urls.py")
@@ -361,5 +367,7 @@ class Command(FileAppCommand):
         # Only write if it does not exist:
         if not os.path.exists(template_file):
             self.write_file(template_file, template_results)
+
+        self.render_ctx = render_ctx    # Appended to the end so it can be queried after.
 
 

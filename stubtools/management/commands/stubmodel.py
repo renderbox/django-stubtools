@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 11:01:50
+# @Last Modified time: 2018-11-19 15:21:47
 #--------------------------------------------
 
 import os.path
@@ -26,7 +26,6 @@ from stubtools.core.parse import get_import_range, get_classes_and_functions_sta
 EXCLUDED_FIELDS = ['BLANK_CHOICE_DASH', 'Empty', 'Field', 'FieldDoesNotExist', 'NOT_PROVIDED']
 
 
-
 class Command(FileAppCommand):
     args = '<app.model_name>'
     help = 'creates stub Templates, Forms and Admin entries for a given model name'
@@ -44,11 +43,16 @@ class Command(FileAppCommand):
             return
 
 
-    def get_context(self, app, model, model_class, context={}):
+    def get_context(self, app, model, model_class, **kwargs):
+
+        starter_ctx = kwargs
 
         # model_classes = get_all_subclasses(Model, ignore_modules=['django.contrib.contenttypes.models', 'django.contrib.admin.models', 'django.contrib.sessions'])
         model_classes = ['django.db.models.Model', 'django.contrib.auth.models.AbstractUser']
-        model_classes.extend([ "%s.%s" % (x.__module__, x.__name__) for x in get_all_subclasses(Model, ignore_modules=['django.contrib.contenttypes.models', 'django.contrib.admin.models', 'django.contrib.sessions', 'django.contrib.auth.base_user', 'django.contrib.auth.models']) ])
+        model_classes.extend([ "%s.%s" % (x.__module__, x.__name__) for x in get_all_subclasses(Model, ignore_modules=['django.contrib.contenttypes.models', 'django.contrib.admin.models', 'django.contrib.sessions', 'django.contrib.auth.base_user', 'django.contrib.auth.models', 'allauth']) ])
+        model_classes = list(set(model_classes))
+        # model_classes.sort()
+
         field_classes = [ "%s.%s" % (x.__module__, x.__name__) for x in get_all_subclasses(Field, ignore_modules=["django.contrib.contenttypes"]) ]
 
         model_class_settings = {}
@@ -67,18 +71,19 @@ class Command(FileAppCommand):
         render_ctx = {'app':app, 'model_key':model_key, 'model':model, 'model_name':model_name, 'attributes':[],
                         'model_header':"", 'model_import_statement':"", 'model_body':"", 'model_footer':"", 'create_model':True }
 
-        if context:
-            print(context)
-            render_ctx.update(context)
+        if starter_ctx:
+            print(starter_ctx)
+            render_ctx.update(starter_ctx)
+            print(render_ctx)
 
         # Creating a model can create a cascade of views that are needed
         render_ctx['create_model_admin'] = ask_yes_no_question("Create an Admin Entry?", default=True, required=True)
         render_ctx['create_model_form'] = ask_yes_no_question("Create a matching Model Form?", default=True, required=True)
-        render_ctx['create_model_views'] = ask_yes_no_question("Create a Matching Model Views?", default=True, required=True)
+        render_ctx['create_model_views'] = ask_yes_no_question("Create matching Model Views?", default=True, required=True)
 
         if render_ctx['create_model_views']:
             render_ctx['create_model_detail'] = ask_yes_no_question("Create a Model Detail View?", default=True, required=True)
-        #     render_ctx['create_model_list'] = ask_yes_no_question("Create a Model List View?", default=True, required=True)
+            render_ctx['create_model_list'] = ask_yes_no_question("Create a Model List View?", default=True, required=True)
         #     render_ctx['create_model_create'] = ask_yes_no_question("Create a Model Create View?", default=render_ctx['create_model_form'], required=True)
         #     render_ctx['create_model_edit'] = ask_yes_no_question("Create a Model Edit View?", default=render_ctx['create_model_form'], required=True)
         #     render_ctx['create_model_delete'] = ask_yes_no_question("Create a Model Delete View?", default=True, required=True)
@@ -102,15 +107,17 @@ class Command(FileAppCommand):
 
         return render_ctx
 
-    def process(self, app, model, model_class, context={}):
+    def process(self, app, model, model_class, **kwargs):
+
+        starter_ctx = kwargs
 
         model_file = os.path.join(app, "models.py")
 
         print("MODEL FILE: %s" % model_file)
         print("CONTEXT")
-        print(context)
+        print(starter_ctx)
 
-        render_ctx = self.get_context(app, model, model_class, context=context)
+        render_ctx = self.get_context(app, model, model_class, **kwargs)
 
         # #######################
         # # PARSE models.py
@@ -127,7 +134,7 @@ class Command(FileAppCommand):
 
         # check to see if the model is already in models.py
         if render_ctx['model'] in structure['class_list']:
-            print("%s model already in '%s', skipping creation" % (render_ctx['model'], model_file))
+            print("** %s model already in '%s', skipping creation" % (render_ctx['model'], model_file))
             render_ctx['create_model'] = False
         else:
             print(model)
@@ -190,10 +197,13 @@ class Command(FileAppCommand):
 
         if render_ctx['create_model_views']:
             from stubtools.management.commands.stubview import Command as ViewCommand
+            vc = ViewCommand()
+            view_kwargs = {}
 
             if render_ctx['create_model_detail']:
-                vc = ViewCommand()
-                # app_args = '.'.join([app, render_ctx['model_name'], "DetailView"])
-                print("APP ARGS: creating a '%s' for model '%s' in app '%s'" % ("DetailView", app, render_ctx['model_name']) )
-                vc.process(app, render_ctx['model_name'], "DetailView")
+                vc.process(app, render_ctx['model_name'], "django.views.generic.detail.DetailView", model=render_ctx['model']) #starter_ctx={'model':'%(model)s' % render_ctx })
+                view_kwargs['template_in_app'] = vc.render_ctx['template_in_app']
+
+            if render_ctx['create_model_list']:
+                vc.process(app, render_ctx['model_name'], "django.views.generic.list.ListView", model=render_ctx['model'], **view_kwargs) #starter_ctx={'model':'%(model)s' % render_ctx })
 

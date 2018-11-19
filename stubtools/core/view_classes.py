@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 14:09:40
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 10:53:42
+# @Last Modified time: 2018-11-19 15:17:26
 # --------------------------------------------
 
 
@@ -65,8 +65,8 @@ VIEW_CLASS_SETTINGS = {
         "default_values":
             {
                 "template_name": "%(app_label)s/%(model_name)s_list.html",
-                "resource_name": "%(app_label)s-%(view_name)s",
-                "resource_pattern": "%(view_name)s/%(model_name)s/list/",
+                "resource_name": "%(app_label)s-%(view_name)s-list",
+                "resource_pattern": "%(model_name)s/list/",
             },
         "template": 'views/ListView.html.j2',
     },
@@ -97,8 +97,8 @@ VIEW_CLASS_SETTINGS = {
         "default_values":
             {
                 "template_name": "%(app_label)s/%(model_name)s_detail.html",
-                "resource_name": "%(app_label)s-%(view_name)s",
-                "resource_pattern": "%(view_name)s/<slug:%(slug_url_kwarg)s>/details/",
+                "resource_name": "%(app_label)s-%(view_name)s-detail",
+                "resource_pattern": "%(view_name)s/<slug:%(slug_url_kwarg)s>/detail/",
             },
     },
     "django.views.generic.edit.FormView": {
@@ -120,8 +120,8 @@ VIEW_CLASS_SETTINGS = {
         "default_values":
             {
                 "template_name": "%(app_label)s/%(model_name)s_form.html",
-                "resource_name": "%(app_label)s-%(view_name)s",
-                "resource_pattern": "%(view_name)s/<slug:%(slug_url_kwarg)s>/details/",
+                "resource_name": "%(app_label)s-%(view_name)s-form",
+                "resource_pattern": "%(view_name)s/<slug:%(slug_url_kwarg)s>/edit/",
             }
         },
     "django.views.generic.base.RedirectView": {
