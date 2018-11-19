@@ -3,27 +3,27 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 14:09:40
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 15:17:26
+# @Last Modified time: 2018-11-19 15:49:44
 # --------------------------------------------
 
 
 VIEW_CLASS_DEFAULT_SETTINGS = {
     "queries": [
         {
-            "question": "Which template to use?",
+            "question": "What should the created template be called?",
             "key": "template_name",
             "default": "%(app_label)s/%(view_name)s.html",
             'attr_type':"str",
             'required': True
         },
         {
-            "question": "What do you want the Path Name to be?",
+            "question": "What do you want the Resource Name to be?",
             "key": "resource_name",
             "default": "%(app_label)s-%(view_name)s",
             "as_atttr": False,
         },
         {
-            "question": "What do you want the Resource Pattern to be in the view?",
+            "question": "What do you want the Resource URL Pattern to be?",
             "key": "resource_pattern",
             "default": "%(view_name)s/",
             "as_atttr": False,
@@ -52,7 +52,7 @@ VIEW_CLASS_SETTINGS = {
             {
                 "question": "Which Model is this for?",
                 "key": "model",
-                'required': True,
+                'required': True
             },
             {
                 "question": "Did you want to add a queryset?",

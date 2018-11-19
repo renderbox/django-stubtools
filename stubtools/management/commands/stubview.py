@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 15:23:56
+# @Last Modified time: 2018-11-19 15:46:43
 #--------------------------------------------
 
 import re, os.path
@@ -36,17 +36,16 @@ class Command(FileAppCommand):
         try:
             for app_view in args:
                 # SPLIT THE APP, VIEW AND VIEW_CLASS
-                app, view, setting_key = parse_app_input(app_view)
-                self.process(app, view, setting_key=setting_key)
+                app, view, view_class = parse_app_input(app_view)
+                self.process(app, view, view_class)
         except KeyboardInterrupt:
             print("\nExiting...")
             return
 
 
-    def get_context(self, app, view, setting_key=None, model=None, **kwargs):
+    def get_context(self, app, view, setting_key=None, **kwargs):
 
         starter_ctx = kwargs
-        starter_ctx['model'] = model
 
         view_class_settings = self.get_class_settings(View, ignore_modules=STUBTOOLS_IGNORE_MODULES, settings=VIEW_CLASS_SETTINGS)      # todo: move this over to a settings option
         view_class_shortname_map = dict([(v['class_name'], k) for k, v in view_class_settings.items()])
@@ -61,7 +60,7 @@ class Command(FileAppCommand):
 
         view_class = view_class_settings[setting_key]['class_name']
 
-        # print("View Class: %s" % view_class)
+        print("View Class: %s" % view_class)
 
         if not view:
             default = "My%s" % view_class
@@ -107,10 +106,15 @@ class Command(FileAppCommand):
 
         queries.extend(default_queries)
 
-        # print(queries)
+        if 'model' in kwargs:       # If a model is explicitly passed in to the method, use that value.  It will be skipped in the queries.
+            attr_ctx['model'] = kwargs['model']
+            render_ctx['model'] = kwargs['model']
+            print("** Working with Model -> %s" % kwargs['model'])
 
         for query in queries:
             key = query['key']
+
+            # print("KEY: %s" % key)
 
             if key in starter_ctx:   # Don't ask the question if an answer is already provided (usually from chaining).
                 continue
@@ -118,13 +122,8 @@ class Command(FileAppCommand):
             default = query.get("default", None)
             ignore_default = query.get("ignore_default", False)
 
-
             # Update the attribute context with the results of render_ctx['attributes'] before creating the default value
             attr_ctx.update(render_ctx['attributes'])
-
-            if model:       # If a model is explicitly passed in to the method, use that value
-                attr_ctx['model'] = model
-                render_ctx['model'] = model
 
             if 'model' in attr_ctx:
                 attr_ctx['model_name'] = "_".join(split_camel_case(attr_ctx['model'])).lower()
@@ -179,11 +178,11 @@ class Command(FileAppCommand):
 
         return render_ctx
 
-    def process(self, app, view, view_class, model=None, **kwargs):
+    def process(self, app, view, view_class, **kwargs):
 
         starter_ctx = kwargs
 
-        render_ctx = self.get_context(app, view, view_class, model=model, **kwargs)
+        render_ctx = self.get_context(app, view, view_class, **kwargs)
 
         view_file = os.path.join(app, "views.py")
         url_file = os.path.join(app, "urls.py")

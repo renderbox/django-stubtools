@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 15:21:47
+# @Last Modified time: 2018-11-19 15:52:05
 #--------------------------------------------
 
 import os.path
@@ -47,19 +47,16 @@ class Command(FileAppCommand):
 
         starter_ctx = kwargs
 
-        # model_classes = get_all_subclasses(Model, ignore_modules=['django.contrib.contenttypes.models', 'django.contrib.admin.models', 'django.contrib.sessions'])
+        field_classes = [ "%s.%s" % (x.__module__, x.__name__) for x in get_all_subclasses(Field, ignore_modules=["django.contrib.contenttypes"]) ]
+
         model_classes = ['django.db.models.Model', 'django.contrib.auth.models.AbstractUser']
         model_classes.extend([ "%s.%s" % (x.__module__, x.__name__) for x in get_all_subclasses(Model, ignore_modules=['django.contrib.contenttypes.models', 'django.contrib.admin.models', 'django.contrib.sessions', 'django.contrib.auth.base_user', 'django.contrib.auth.models', 'allauth']) ])
         model_classes = list(set(model_classes))
-        # model_classes.sort()
-
-        field_classes = [ "%s.%s" % (x.__module__, x.__name__) for x in get_all_subclasses(Field, ignore_modules=["django.contrib.contenttypes"]) ]
 
         model_class_settings = {}
-        # modelclass_settings.update(MODELCLASS_SETTINGS)     # Update the setting dict with defaults
         model_key = selection_list(model_classes, as_string=True, title="Select a Model Class")
 
-        if not model:
+        if not model:   # todo: Move to settings file
             default = "MyModel"
             model = input("What is the name of the model? [%s] > " % default) or default
 
