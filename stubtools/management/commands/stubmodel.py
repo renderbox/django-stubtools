@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 15:52:05
+# @Last Modified time: 2018-11-19 16:10:54
 #--------------------------------------------
 
 import os.path
@@ -30,6 +30,7 @@ class Command(FileAppCommand):
     args = '<app.model_name>'
     help = 'creates stub Templates, Forms and Admin entries for a given model name'
     pp = pprint.PrettyPrinter(indent=4)
+    debug = False
 
     def handle(self, *args, **kwargs):
 
@@ -81,9 +82,10 @@ class Command(FileAppCommand):
         if render_ctx['create_model_views']:
             render_ctx['create_model_detail'] = ask_yes_no_question("Create a Model Detail View?", default=True, required=True)
             render_ctx['create_model_list'] = ask_yes_no_question("Create a Model List View?", default=True, required=True)
-        #     render_ctx['create_model_create'] = ask_yes_no_question("Create a Model Create View?", default=render_ctx['create_model_form'], required=True)
-        #     render_ctx['create_model_edit'] = ask_yes_no_question("Create a Model Edit View?", default=render_ctx['create_model_form'], required=True)
-        #     render_ctx['create_model_delete'] = ask_yes_no_question("Create a Model Delete View?", default=True, required=True)
+
+            # render_ctx['create_model_create'] = ask_yes_no_question("Create a Model Create View?", default=True, required=True)
+            # render_ctx['create_model_edit'] = ask_yes_no_question("Create a Model Edit View?", default=True, required=True)
+            # render_ctx['create_model_delete'] = ask_yes_no_question("Create a Model Delete View?", default=True, required=True)
 
         # In this case, load the other commands and give them settings
 
@@ -183,18 +185,20 @@ class Command(FileAppCommand):
         model_template = get_template('stubtools/stubmodel/model.py.j2', using='jinja2')
         model_result = model_template.render(context=render_ctx)
 
-        if render_ctx['create_model']:
+        if render_ctx['create_model'] and not self.debug:
             self.write_file(model_file, model_result)
-        # else:
-        #     print( horizontal_rule() )
-        #     print("models.py RESULT:")
-        #     print(model_result)
+        
+        if self.debug:
+            print( horizontal_rule() )
+            print("models.py RESULT:")
+            print(model_result)
 
         # This lets the uer create new views to match
 
         if render_ctx['create_model_views']:
             from stubtools.management.commands.stubview import Command as ViewCommand
             vc = ViewCommand()
+            vc.debug = self.debug
             view_kwargs = {}
 
             if render_ctx['create_model_detail']:
@@ -203,4 +207,6 @@ class Command(FileAppCommand):
 
             if render_ctx['create_model_list']:
                 vc.process(app, render_ctx['model_name'], "django.views.generic.list.ListView", model=render_ctx['model'], **view_kwargs) #starter_ctx={'model':'%(model)s' % render_ctx })
+
+        self.render_ctx = render_ctx    # Appended to the end so it can be queried after.
 

@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2015-10-27 13:59:25
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-09 17:42:45
+# @Last Modified time: 2018-11-19 16:08:05
 #--------------------------------------------
 from unittest import TestCase
 from stubtools.core.parse import get_import_range
@@ -46,3 +46,5 @@ class CoreParseGetImportRangeTestCase(TestCase):
 
     def test_mising_import_line(self):
         self.assertEqual( get_import_range("^from django.db import models", self.data_lines_missing_import), (2,2) )
+
+

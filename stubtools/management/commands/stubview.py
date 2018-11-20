@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 15:46:43
+# @Last Modified time: 2018-11-19 16:09:28
 #--------------------------------------------
 
 import re, os.path
@@ -27,6 +27,7 @@ class Command(FileAppCommand):
     args = '<app.view.view_class>'
     help = 'creates a template and matching view for the given view name'
     terminal_width = 80
+    debug = False
 
     def handle(self, *args, **kwargs):
         if len(args) < 1:
@@ -43,22 +44,20 @@ class Command(FileAppCommand):
             return
 
 
-    def get_context(self, app, view, setting_key=None, **kwargs):
-
-        starter_ctx = kwargs
+    def get_context(self, app, view, view_setting_key, **kwargs):
 
         view_class_settings = self.get_class_settings(View, ignore_modules=STUBTOOLS_IGNORE_MODULES, settings=VIEW_CLASS_SETTINGS)      # todo: move this over to a settings option
         view_class_shortname_map = dict([(v['class_name'], k) for k, v in view_class_settings.items()])
 
         # PICK THE VIEW CLASS TO USE BASED ON A LIST OF AVAILABLE CLASSES IF NOT SET IN THE COMMAND LINE
-        if not setting_key:
+        if not view_setting_key:
             view_short_key = selection_list(list( view_class_shortname_map.keys() ), as_string=True)
-            setting_key = view_class_shortname_map[view_short_key]
+            view_setting_key = view_class_shortname_map[view_short_key]
 
-        if setting_key:
-            print("\nUsing Module Setting for '%s'" % setting_key)
+        if view_setting_key:
+            print("\nUsing Module Setting for '%s'" % view_setting_key)
 
-        view_class = view_class_settings[setting_key]['class_name']
+        view_class = view_class_settings[view_setting_key]['class_name']
 
         print("View Class: %s" % view_class)
 
@@ -73,32 +72,32 @@ class Command(FileAppCommand):
 
         render_ctx = {'app':app, 'view':view, 'view_name':view_name, 'views':[],
                         'view_class':view_class, 'attributes':{}, 
-                        'view_class_module': view_class_settings[setting_key]['module'] }
+                        'view_class_module': view_class_settings[view_setting_key]['module'] }
 
-        render_ctx.update(starter_ctx)  # Update with any context info passed in.
+        render_ctx.update(kwargs)  # Update with any context info passed in.
 
         attr_ctx = {'app_label': app, 'view_name':view_name}
 
         key_remove_attr_list = []   # This is so defaults are available while the questioning is going on so defaults can be applied to other attrs.
 
-        if not 'template_in_app' in starter_ctx:
+        if not 'template_in_app' in kwargs:
             render_ctx['template_in_app'] = ask_yes_no_question("Place templates at the app level?", default=True, required=True)
 
-        render_ctx['constructor_template'] = view_class_settings[setting_key].get("template", VIEW_CLASS_DEFAULT_SETTINGS['template'])
+        render_ctx['constructor_template'] = view_class_settings[view_setting_key].get("template", VIEW_CLASS_DEFAULT_SETTINGS['template'])
 
         ################
         # QUERIES:
         # Query the user to build the attribute values
 
-        # print(setting_key)
+        # print(view_setting_key)
 
         queries = []
-        queries.extend(view_class_settings[setting_key].get("queries", []))
+        queries.extend(view_class_settings[view_setting_key].get("queries", []))
 
         default_queries = []
         default_queries.extend(VIEW_CLASS_DEFAULT_SETTINGS['queries'])
 
-        default_values = view_class_settings[setting_key].get("default_values", {})
+        default_values = view_class_settings[view_setting_key].get("default_values", {})
 
         for item in default_queries:
             if item['key'] in default_values:
@@ -116,7 +115,7 @@ class Command(FileAppCommand):
 
             # print("KEY: %s" % key)
 
-            if key in starter_ctx:   # Don't ask the question if an answer is already provided (usually from chaining).
+            if key in kwargs:   # Don't ask the question if an answer is already provided (usually from chaining).
                 continue
 
             default = query.get("default", None)
@@ -153,7 +152,7 @@ class Command(FileAppCommand):
         for key in key_remove_attr_list:
             del render_ctx['attributes'][key]
 
-        view_suffix = view_class_settings[setting_key].get("view_suffix", "View")     # Given the view type, there is a common convention for appending to the name of the "page's" View's Class
+        view_suffix = view_class_settings[view_setting_key].get("view_suffix", "View")     # Given the view type, there is a common convention for appending to the name of the "page's" View's Class
 
         render_ctx['description'] = ask_question("Did you want to add a quick description?")
 
@@ -179,8 +178,6 @@ class Command(FileAppCommand):
         return render_ctx
 
     def process(self, app, view, view_class, **kwargs):
-
-        starter_ctx = kwargs
 
         render_ctx = self.get_context(app, view, view_class, **kwargs)
 
@@ -320,10 +317,11 @@ class Command(FileAppCommand):
         # RENDER THE TEMPLATES
         #######################
 
-        # print( horizontal_rule() )
-        # print("RENDER CONTEXT:")
-        # pp.pprint(render_ctx)
-        # print( horizontal_rule() )
+        if self.debug:
+            print( horizontal_rule() )
+            print("RENDER CONTEXT:")
+            pp.pprint(render_ctx)
+            print( horizontal_rule() )
 
         #######################
         # Render Templates
@@ -340,32 +338,33 @@ class Command(FileAppCommand):
         #######################
         # Writing Output
 
-        # print("views.py RESULT:")
-        # print(view_result)
+        if self.debug:
+            print("views.py RESULT:")
+            print(view_result)
 
-        # print( horizontal_rule() )
-        # print("urls.py RESULT:")
-        # print( horizontal_rule() )
-        # print(urls_result)
+            print( horizontal_rule() )
+            print("urls.py RESULT:")
+            print( horizontal_rule() )
+            print(urls_result)
 
-        # print( horizontal_rule() )
-        # print("TEMPLATE RESULT:")
-        # print(template_file)
-        # print( horizontal_rule() )
-        # print(template_results)
+            print( horizontal_rule() )
+            print("%s RESULT:" % template_file)
+            print( horizontal_rule() )
+            print(template_results)
 
-        # print( horizontal_rule() )
-        # print("FILES:")
-        # print("    VIEW FILE: %s" % view_file)
-        # print("    URL FILE: %s" % url_file)
-        # print("    TEMPLATE FILE: %s" % template_file)
+            print( horizontal_rule() )
+            print("FILES:")
+            print("    VIEW FILE: %s" % view_file)
+            print("    URL FILE: %s" % url_file)
+            print("    TEMPLATE FILE: %s" % template_file)
 
-        self.write_file(view_file, view_result)
-        self.write_file(url_file, urls_result)
+        if not self.debug:
+            self.write_file(view_file, view_result)
+            self.write_file(url_file, urls_result)
 
-        # Only write if it does not exist:
-        if not os.path.exists(template_file):
-            self.write_file(template_file, template_results)
+            # Only write if it does not exist:
+            if not os.path.exists(template_file):
+                self.write_file(template_file, template_results)
 
         self.render_ctx = render_ctx    # Appended to the end so it can be queried after.
 
