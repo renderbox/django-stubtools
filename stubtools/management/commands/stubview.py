@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 16:09:28
+# @Last Modified time: 2018-11-19 16:16:02
 #--------------------------------------------
 
 import re, os.path
@@ -13,8 +13,6 @@ import pprint
 from django.core.management.base import CommandError
 from django.views.generic.base import View
 from django.template.loader import get_template
-
-# from jinja2 import Environment, PackageLoader, select_autoescape
 
 from stubtools.core import FileAppCommand, class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case, parse_app_input, get_file_lines
 from stubtools.core.prompt import ask_question, ask_yes_no_question, selection_list, horizontal_rule

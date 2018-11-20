@@ -3,15 +3,12 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 16:10:54
+# @Last Modified time: 2018-11-19 16:15:57
 #--------------------------------------------
 
 import os.path
-# import re
-# import inspect
 import pprint
 
-# from jinja2 import Environment, PackageLoader, select_autoescape
 from django.template.loader import get_template
 
 from django.core.management.base import CommandError
@@ -34,7 +31,6 @@ class Command(FileAppCommand):
 
     def handle(self, *args, **kwargs):
 
-        # batch process app models
         try:
             for app_model in args:
                 app, model, model_class = parse_app_input(app_model)    # Broken out so process's can be chained
@@ -45,8 +41,6 @@ class Command(FileAppCommand):
 
 
     def get_context(self, app, model, model_class, **kwargs):
-
-        starter_ctx = kwargs
 
         field_classes = [ "%s.%s" % (x.__module__, x.__name__) for x in get_all_subclasses(Field, ignore_modules=["django.contrib.contenttypes"]) ]
 
@@ -69,10 +63,8 @@ class Command(FileAppCommand):
         render_ctx = {'app':app, 'model_key':model_key, 'model':model, 'model_name':model_name, 'attributes':[],
                         'model_header':"", 'model_import_statement':"", 'model_body':"", 'model_footer':"", 'create_model':True }
 
-        if starter_ctx:
-            print(starter_ctx)
-            render_ctx.update(starter_ctx)
-            print(render_ctx)
+        if kwargs:
+            render_ctx.update(kwargs)
 
         # Creating a model can create a cascade of views that are needed
         render_ctx['create_model_admin'] = ask_yes_no_question("Create an Admin Entry?", default=True, required=True)
@@ -108,13 +100,13 @@ class Command(FileAppCommand):
 
     def process(self, app, model, model_class, **kwargs):
 
-        starter_ctx = kwargs
-
         model_file = os.path.join(app, "models.py")
 
         print("MODEL FILE: %s" % model_file)
-        print("CONTEXT")
-        print(starter_ctx)
+
+        if self.debug:
+            print("CONTEXT")
+            print(kwargs)
 
         render_ctx = self.get_context(app, model, model_class, **kwargs)
 
@@ -127,17 +119,18 @@ class Command(FileAppCommand):
         line_count = len(data_lines)
         structure = self.parse_code("".join(data_lines))
 
-        # print( horizontal_rule() )
-        # print("FILE STRUCTURE (%s):" % model_file)
-        # self.pp.pprint(structure)
+        if self.debug:
+            print( horizontal_rule() )
+            print("FILE STRUCTURE (%s):" % model_file)
+            self.pp.pprint(structure)
 
         # check to see if the model is already in models.py
         if render_ctx['model'] in structure['class_list']:
             print("** %s model already in '%s', skipping creation" % (render_ctx['model'], model_file))
             render_ctx['create_model'] = False
-        else:
-            print(model)
-            print(structure['class_list'])
+        # else:
+        #     print(model)
+        #     print(structure['class_list'])
 
         # Establish the Segments
         if structure['first_import_line']:
@@ -178,9 +171,10 @@ class Command(FileAppCommand):
         # RENDER THE TEMPLATES
         #######################
 
-        # print( horizontal_rule() )
-        # print("RENDER CONTEXT:")
-        # self.pp.pprint(render_ctx)
+        if self.debug:
+            print( horizontal_rule() )
+            print("RENDER CONTEXT:")
+            self.pp.pprint(render_ctx)
 
         model_template = get_template('stubtools/stubmodel/model.py.j2', using='jinja2')
         model_result = model_template.render(context=render_ctx)
@@ -202,11 +196,11 @@ class Command(FileAppCommand):
             view_kwargs = {}
 
             if render_ctx['create_model_detail']:
-                vc.process(app, render_ctx['model_name'], "django.views.generic.detail.DetailView", model=render_ctx['model']) #starter_ctx={'model':'%(model)s' % render_ctx })
+                vc.process(app, render_ctx['model_name'], "django.views.generic.detail.DetailView", model=render_ctx['model'])
                 view_kwargs['template_in_app'] = vc.render_ctx['template_in_app']
 
             if render_ctx['create_model_list']:
-                vc.process(app, render_ctx['model_name'], "django.views.generic.list.ListView", model=render_ctx['model'], **view_kwargs) #starter_ctx={'model':'%(model)s' % render_ctx })
+                vc.process(app, render_ctx['model_name'], "django.views.generic.list.ListView", model=render_ctx['model'], **view_kwargs)
 
         self.render_ctx = render_ctx    # Appended to the end so it can be queried after.
 
