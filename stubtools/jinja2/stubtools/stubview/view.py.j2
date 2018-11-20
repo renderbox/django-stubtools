@@ -15,8 +15,8 @@
 #--------------
 # VIEWS - Views for your app
 #--------------{% endif %}
-{% if page_class %}
-class {{ page_class }}({{ view_class }}):{% if description %}
+{% if resource_class %}
+class {{ resource_class }}({{ view_class }}):{% if description %}
     '''
     {{ description }}
     '''{% endif %}

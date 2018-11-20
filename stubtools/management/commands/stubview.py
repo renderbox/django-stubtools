@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 16:34:28
+# @Last Modified time: 2018-11-20 12:15:18
 #--------------------------------------------
 
 import re, os.path
@@ -25,7 +25,8 @@ class Command(FileAppCommand):
     args = '<app.view.view_class>'
     help = 'creates a template and matching view for the given view name'
     terminal_width = 80
-    debug = False
+    view_file = None
+    url_file = None
 
     def handle(self, *args, **kwargs):
         if len(args) < 1:
@@ -49,8 +50,10 @@ class Command(FileAppCommand):
 
         # PICK THE VIEW CLASS TO USE BASED ON A LIST OF AVAILABLE CLASSES IF NOT SET IN THE COMMAND LINE
         if not view_setting_key:
-            view_short_key = selection_list(list( view_class_shortname_map.keys() ), as_string=True)
-            view_setting_key = view_class_shortname_map[view_short_key]
+            view_setting_key = selection_list(list( view_class_shortname_map.keys() ), as_string=True)
+            
+        if len(view_setting_key.split(".")) == 1:
+            view_setting_key = view_class_shortname_map[view_setting_key]
 
         if view_setting_key:
             print("\nUsing Module Setting for '%s'" % view_setting_key)
@@ -87,8 +90,7 @@ class Command(FileAppCommand):
         # QUERIES:
         # Query the user to build the attribute values
 
-        if self.debug:
-            print("Setting Key: %s" % view_setting_key)
+        self.logger.debug("Setting Key: %s" % view_setting_key)
 
         queries = []
         queries.extend(view_class_settings[view_setting_key].get("queries", []))
@@ -112,8 +114,7 @@ class Command(FileAppCommand):
         for query in queries:
             key = query['key']
 
-            if self.debug:
-                print("KEY: %s" % key)
+            self.logger.debug("KEY: %s" % key)
 
             if key in kwargs:   # Don't ask the question if an answer is already provided (usually from chaining).
                 if self.debug:
@@ -160,9 +161,9 @@ class Command(FileAppCommand):
 
         # POP VIEW OFF THE NAME PARTS IF IT IS THERE
         if view.endswith(view_suffix):
-            render_ctx['page_class'] = view
+            render_ctx['resource_class'] = view
         else:
-            render_ctx['page_class'] = view + view_suffix
+            render_ctx['resource_class'] = view + view_suffix
 
         # Break the Name up into parts
         name_parts = split_camel_case(view[:(-1 * len(view_suffix))])
@@ -181,33 +182,37 @@ class Command(FileAppCommand):
 
     def process(self, app, view, view_class, **kwargs):
 
-        render_ctx = self.get_context(app, view, view_class, **kwargs)
+        self.render_ctx = self.get_context(app, view, view_class, **kwargs)
 
-        view_file = os.path.join(app, "views.py")
-        url_file = os.path.join(app, "urls.py")
+        if not self.view_file:
+            self.view_file = os.path.join(app, "views.py")
 
-        if render_ctx['template_in_app']:
-            template_file = os.path.join(app, "templates", *render_ctx['attributes']['template_name'][1:-1].split("/"))
+        if not self.url_file:
+            self.url_file = os.path.join(app, "urls.py")
+
+        if self.render_ctx['template_in_app']:
+            template_file = os.path.join(app, "templates", *self.render_ctx['attributes']['template_name'][1:-1].split("/"))
         else:
-            template_file = os.path.join("templates", *render_ctx['attributes']['template_name'][1:-1].split("/"))     # todo: get the template folder name from the settings
+            template_file = os.path.join("templates", *self.render_ctx['attributes']['template_name'][1:-1].split("/"))     # todo: get the template folder name from the settings
 
         #######################
         # PARSE view.py
         #######################
 
         # Slice and Dice!
-        data_lines = get_file_lines(view_file)
+        print(self.view_file)
+        data_lines = get_file_lines(self.view_file)
         line_count = len(data_lines)
-        structure = self.parse_code("".join(data_lines))
+        self.structure = self.parse_code("".join(data_lines))
 
         print( horizontal_rule() )
         print("FILE STRUCTURE:")
-        self.pp.pprint(structure)
+        self.pp.pprint(self.structure)
 
         # check to see if the model is already in views.py
-        if render_ctx['page_class'] in structure['class_list']:
-            print("** %s view already in '%s', skipping creation" % (render_ctx['view'], view_file))
-            render_ctx['create_view'] = False
+        if self.render_ctx['resource_class'] in self.structure['class_list']:
+            print("** %s view already in '%s', skipping creation" % (self.render_ctx['view'], self.view_file))
+            self.render_ctx['create_view'] = False
             return
 
         # Establish the Segments
@@ -221,12 +226,12 @@ class Command(FileAppCommand):
         pre_view = None
         post_view = None
 
-        import_start_index, import_end_index = get_import_range("^from %(view_class_module)s import (.+)" % render_ctx, data_lines[:class_func_start])
+        import_start_index, import_end_index = get_import_range("^from %(view_class_module)s import (.+)" % self.render_ctx, data_lines[:class_func_start])
         
         if import_start_index > import_end_index:
-            render_ctx['view_import_statement'] = create_import_line(data_lines[import_start_index], render_ctx['view_class_module'], render_ctx['view_class'])
+            self.render_ctx['view_import_statement'] = create_import_line(data_lines[import_start_index], self.render_ctx['view_class_module'], self.render_ctx['view_class'])
         else:
-            render_ctx['view_import_statement'] = "from %(view_class_module)s import %(view_class)s" % render_ctx
+            self.render_ctx['view_import_statement'] = "from %(view_class_module)s import %(view_class)s" % self.render_ctx
 
         # 3) Find where the post_view starts
 
@@ -244,9 +249,9 @@ class Command(FileAppCommand):
 
         # 4) Build the sections
 
-        render_ctx['view_header'] = "".join(data_lines[:import_start_index])
-        render_ctx['view_pre_view'] = "".join(data_lines[import_end_index:class_func_end])
-        render_ctx['view_footer'] = "".join(data_lines[class_func_end:])
+        self.render_ctx['view_header'] = "".join(data_lines[:import_start_index])
+        self.render_ctx['view_pre_view'] = "".join(data_lines[import_end_index:class_func_end])
+        self.render_ctx['view_footer'] = "".join(data_lines[class_func_end:])
 
         #######################
         # PARSE urls.py
@@ -264,12 +269,12 @@ class Command(FileAppCommand):
         # ]
 
         # Slice and Dice!
-        data_lines = get_file_lines(url_file)
+        data_lines = get_file_lines(self.url_file)
         line_count = len(data_lines)
 
         resource_pattern_start = get_pattern_line("(urlpatterns =)", data_lines, default=line_count)
         resource_pattern_end = get_pattern_line("]", data_lines[resource_pattern_start:], default=0) + resource_pattern_start    # Look for the ']' after the urlpatterns
-        render_ctx['existing_patterns'] = [ p.strip() for p in get_all_pattern_lines(r"(url\(|path\(|re_path\()", data_lines) ]
+        self.render_ctx['existing_patterns'] = [ p.strip() for p in get_all_pattern_lines(r"(url\(|path\(|re_path\()", data_lines) ]
 
         import_block = data_lines[:resource_pattern_start]
 
@@ -291,22 +296,22 @@ class Command(FileAppCommand):
                             url_import_line = c
                             break
             
-            render_ctx['url_import_statement'] = "from django.urls import path, re_path"    # todo: this could be better and more flexible.  Need to check to see ALL modules that are loaded
+            self.render_ctx['url_import_statement'] = "from django.urls import path, re_path"    # todo: this could be better and more flexible.  Need to check to see ALL modules that are loaded
 
             # Update the Exisitng Patterns here
-            render_ctx['existing_patterns'] = [re.sub(r'url\(', r're_path(', item) for item in render_ctx['existing_patterns']]
+            self.render_ctx['existing_patterns'] = [re.sub(r'url\(', r're_path(', item) for item in self.render_ctx['existing_patterns']]
         else:
             url_import_line = get_pattern_line("^from django.conf.urls import (.+)", import_block, default=0)
-            render_ctx['url_import_statement'] = "from django.conf.urls import url"
+            self.render_ctx['url_import_statement'] = "from django.conf.urls import url"
 
         # If the view import line is missing, make sure it's there
         if get_pattern_line("^from \. import(.+)", import_block) == None:
-            render_ctx['url_import_statement'] = render_ctx['url_import_statement'] + "\nfrom . import views"
+            self.render_ctx['url_import_statement'] = self.render_ctx['url_import_statement'] + "\nfrom . import views"
 
         if url_import_line > 0:
-            render_ctx['pre_import'] = "".join(data_lines[:url_import_line])
+            self.render_ctx['pre_import'] = "".join(data_lines[:url_import_line])
         else:
-            render_ctx['pre_import'] = ""
+            self.render_ctx['pre_import'] = ""
 
         pre_url_lines = data_lines[url_import_line:resource_pattern_start]
 
@@ -316,8 +321,8 @@ class Command(FileAppCommand):
             if old_url_line != None:
                 pre_url_lines.pop(old_url_line)
 
-        render_ctx['pre_urls'] = "".join(pre_url_lines)
-        render_ctx['post_urls'] = "".join(data_lines[resource_pattern_end + 1:])
+        self.render_ctx['pre_urls'] = "".join(pre_url_lines)
+        self.render_ctx['post_urls'] = "".join(data_lines[resource_pattern_end + 1:])
 
         # Get the import lines
 
@@ -330,7 +335,7 @@ class Command(FileAppCommand):
         # if self.debug:
         print( horizontal_rule() )
         print("RENDER CONTEXT:")
-        self.pp.pprint(render_ctx)
+        self.pp.pprint(self.render_ctx)
         print( horizontal_rule() )
 
         #######################
@@ -339,11 +344,11 @@ class Command(FileAppCommand):
         # load templates using Django's settings so users can create customized override templates.
         view_template = get_template('stubtools/stubview/view.py.j2', using='jinja2')
         url_template = get_template('stubtools/stubview/urls.py.j2', using='jinja2')
-        constructor_template = get_template('stubtools/stubview/' + render_ctx['constructor_template'], using='jinja2')
+        constructor_template = get_template('stubtools/stubview/' + self.render_ctx['constructor_template'], using='jinja2')
 
-        view_result = view_template.render(context=render_ctx)
-        urls_result = url_template.render(context=render_ctx)
-        template_results = constructor_template.render(context=render_ctx)
+        view_result = view_template.render(context=self.render_ctx)
+        urls_result = url_template.render(context=self.render_ctx)
+        template_results = constructor_template.render(context=self.render_ctx)
 
         #######################
         # Writing Output
@@ -364,18 +369,17 @@ class Command(FileAppCommand):
 
             print( horizontal_rule() )
             print("FILES:")
-            print("    VIEW FILE: %s" % view_file)
-            print("    URL FILE: %s" % url_file)
+            print("    VIEW FILE: %s" % self.view_file)
+            print("    URL FILE: %s" % self.url_file)
             print("    TEMPLATE FILE: %s" % template_file)
 
-        # if not self.debug:
-        #     self.write_file(view_file, view_result)
-        #     self.write_file(url_file, urls_result)
+        if self.write_files:
+            self.write_file(self.view_file, view_result)
+            self.write_file(self.url_file, urls_result)
 
-        #     # Only write if it does not exist:
-        #     if not os.path.exists(template_file):
-        #         self.write_file(template_file, template_results)
+            # Only write if it does not exist:
+            if not os.path.exists(template_file):
+                self.write_file(template_file, template_results)
 
-        self.render_ctx = render_ctx    # Appended to the end so it can be queried after.
 
 

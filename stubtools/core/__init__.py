@@ -1,6 +1,14 @@
+#--------------------------------------------
+# Copyright 2013-2018, Grant Viklund
+# @Author: Grant Viklund
+# @Date:   2017-02-20 13:50:51
+# @Last Modified by:   Grant Viklund
+# @Last Modified time: 2018-11-20 12:04:10
+#--------------------------------------------
 import re, os.path
 import ast
 import pprint
+import logging
 
 from django.core.management.base import AppCommand
 from django.conf import settings
@@ -131,6 +139,9 @@ def class_path_as_string(cl):
 class FileAppCommand(AppCommand):
 
     pp = pprint.PrettyPrinter(indent=4)
+    debug = False       # Should move this to the logger
+    write_files = True
+    logger = logging.getLogger(__name__)
 
     def write_file(self, file_path, data, create_path=True):
         full_path = os.path.abspath(file_path)          # Make it a full path to reduce issues in parsing direcotry from file
