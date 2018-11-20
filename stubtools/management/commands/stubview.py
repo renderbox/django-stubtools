@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 16:16:02
+# @Last Modified time: 2018-11-19 16:34:28
 #--------------------------------------------
 
 import re, os.path
@@ -87,7 +87,8 @@ class Command(FileAppCommand):
         # QUERIES:
         # Query the user to build the attribute values
 
-        # print(view_setting_key)
+        if self.debug:
+            print("Setting Key: %s" % view_setting_key)
 
         queries = []
         queries.extend(view_class_settings[view_setting_key].get("queries", []))
@@ -111,9 +112,12 @@ class Command(FileAppCommand):
         for query in queries:
             key = query['key']
 
-            # print("KEY: %s" % key)
+            if self.debug:
+                print("KEY: %s" % key)
 
             if key in kwargs:   # Don't ask the question if an answer is already provided (usually from chaining).
+                if self.debug:
+                    print("\tValue provided in method call, skipping.")
                 continue
 
             default = query.get("default", None)
@@ -194,6 +198,17 @@ class Command(FileAppCommand):
         # Slice and Dice!
         data_lines = get_file_lines(view_file)
         line_count = len(data_lines)
+        structure = self.parse_code("".join(data_lines))
+
+        print( horizontal_rule() )
+        print("FILE STRUCTURE:")
+        self.pp.pprint(structure)
+
+        # check to see if the model is already in views.py
+        if render_ctx['page_class'] in structure['class_list']:
+            print("** %s view already in '%s', skipping creation" % (render_ctx['view'], view_file))
+            render_ctx['create_view'] = False
+            return
 
         # Establish the Segments
         import_start_index = 0
@@ -232,9 +247,6 @@ class Command(FileAppCommand):
         render_ctx['view_header'] = "".join(data_lines[:import_start_index])
         render_ctx['view_pre_view'] = "".join(data_lines[import_end_index:class_func_end])
         render_ctx['view_footer'] = "".join(data_lines[class_func_end:])
-
-        pp = pprint.PrettyPrinter(indent=4)
-
 
         #######################
         # PARSE urls.py
@@ -315,11 +327,11 @@ class Command(FileAppCommand):
         # RENDER THE TEMPLATES
         #######################
 
-        if self.debug:
-            print( horizontal_rule() )
-            print("RENDER CONTEXT:")
-            pp.pprint(render_ctx)
-            print( horizontal_rule() )
+        # if self.debug:
+        print( horizontal_rule() )
+        print("RENDER CONTEXT:")
+        self.pp.pprint(render_ctx)
+        print( horizontal_rule() )
 
         #######################
         # Render Templates
@@ -356,13 +368,13 @@ class Command(FileAppCommand):
             print("    URL FILE: %s" % url_file)
             print("    TEMPLATE FILE: %s" % template_file)
 
-        if not self.debug:
-            self.write_file(view_file, view_result)
-            self.write_file(url_file, urls_result)
+        # if not self.debug:
+        #     self.write_file(view_file, view_result)
+        #     self.write_file(url_file, urls_result)
 
-            # Only write if it does not exist:
-            if not os.path.exists(template_file):
-                self.write_file(template_file, template_results)
+        #     # Only write if it does not exist:
+        #     if not os.path.exists(template_file):
+        #         self.write_file(template_file, template_results)
 
         self.render_ctx = render_ctx    # Appended to the end so it can be queried after.
 

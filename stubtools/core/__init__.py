@@ -1,5 +1,6 @@
 import re, os.path
 import ast
+import pprint
 
 from django.core.management.base import AppCommand
 from django.conf import settings
@@ -128,6 +129,8 @@ def class_path_as_string(cl):
 #############
 
 class FileAppCommand(AppCommand):
+
+    pp = pprint.PrettyPrinter(indent=4)
 
     def write_file(self, file_path, data, create_path=True):
         full_path = os.path.abspath(file_path)          # Make it a full path to reduce issues in parsing direcotry from file

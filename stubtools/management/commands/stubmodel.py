@@ -3,11 +3,10 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 16:15:57
+# @Last Modified time: 2018-11-19 16:28:54
 #--------------------------------------------
 
 import os.path
-import pprint
 
 from django.template.loader import get_template
 
@@ -26,7 +25,6 @@ EXCLUDED_FIELDS = ['BLANK_CHOICE_DASH', 'Empty', 'Field', 'FieldDoesNotExist', '
 class Command(FileAppCommand):
     args = '<app.model_name>'
     help = 'creates stub Templates, Forms and Admin entries for a given model name'
-    pp = pprint.PrettyPrinter(indent=4)
     debug = False
 
     def handle(self, *args, **kwargs):
@@ -128,17 +126,12 @@ class Command(FileAppCommand):
         if render_ctx['model'] in structure['class_list']:
             print("** %s model already in '%s', skipping creation" % (render_ctx['model'], model_file))
             render_ctx['create_model'] = False
-        # else:
-        #     print(model)
-        #     print(structure['class_list'])
 
         # Establish the Segments
         if structure['first_import_line']:
-            # import_start_index = structure['first_import_line'] - 1
             body_start_index = structure['last_import_line']
             header_end_index = body_start_index
         else:
-            # import_start_index = 0
             body_start_index = 0
             header_end_index = body_start_index
 

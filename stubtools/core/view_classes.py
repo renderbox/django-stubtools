@@ -3,9 +3,8 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 14:09:40
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 15:49:44
+# @Last Modified time: 2018-11-20 11:18:44
 # --------------------------------------------
-
 
 VIEW_CLASS_DEFAULT_SETTINGS = {
     "queries": [
@@ -68,7 +67,7 @@ VIEW_CLASS_SETTINGS = {
                 "resource_name": "%(app_label)s-%(view_name)s-list",
                 "resource_pattern": "%(model_name)s/list/",
             },
-        "template": 'views/ListView.html.j2',
+        # "template": 'views/ListView.html.j2',
     },
     "django.views.generic.detail.DetailView": {
         "queries": [
