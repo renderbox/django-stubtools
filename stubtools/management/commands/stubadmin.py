@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-26 10:32:39
+# @Last Modified time: 2018-11-26 15:55:52
 #--------------------------------------------
 
 import os.path
@@ -17,7 +17,7 @@ from django.template.loader import get_template
 
 from stubtools.core import FileAppCommand, parse_app_input
 from stubtools.core.search import get_first_index, get_last_index, get_first_and_last_index
-from stubtools.core.file import write_file
+from stubtools.core.file import write_file, PythonFileParser
 from stubtools.core.prompt import horizontal_rule, selection_list
 
 
@@ -96,16 +96,17 @@ class Command(FileAppCommand):
         app_models = []
 
         if not model:
-            model_file_lines = self.load_file(model_file)
-            model_file_structure = self.parse_code("".join(model_file_lines))
+            # model_file_lines = self.load_file(model_file)
+            # model_file_structure = self.parse_code("".join(model_file_lines))
+            model_file_parser = PythonFileParser(model_file)
     
             # Pass in a list of available models from models.py
-            app_models = [x['name'] for x in model_file_structure['classes'] if 'models.Model' in x['inheritence_chain'] ]
+            app_models = [x['name'] for x in model_file_parser.structure['classes'] if 'models.Model' in x['inheritence_chain'] ]
 
         self.render_ctx = self.get_context(app, model, app_models=app_models, **kwargs)
 
         admin_file_lines = self.load_file(admin_file)
-        self.structure = self.parse_code("".join(admin_file_lines))
+        # self.structure = self.parse_code("".join(admin_file_lines))
 
 
         #######################
@@ -115,18 +116,18 @@ class Command(FileAppCommand):
         if self.debug:
             print( horizontal_rule() )
             print("FILE STRUCTURE:")
-            self.pp.pprint(self.structure)
+            self.pp.pprint(self.parser.structure)
 
         modules = []
         comment = ""
 
-        last_file_line = len(admin_file_lines)
+        # last_file_line = len(admin_file_lines)
 
-        class_start_line = self.structure['first_class_line']
-        class_end_line = self.structure['last_class_line']
+        # class_start_line = self.structure['first_class_line']
+        # class_end_line = self.structure['last_class_line']
 
-        body_start_index = self.structure['last_import_line'] + 1
-        header_end_index = self.structure['last_import_line']
+        # body_start_index = self.structure['last_import_line'] + 1
+        # header_end_index = self.structure['last_import_line']
 
         # if self.structure['first_import_line']:
         #     body_start_index = self.structure['last_import_line']
@@ -135,34 +136,34 @@ class Command(FileAppCommand):
         #     body_start_index = 0
         #     header_end_index = body_start_index
 
-        if self.structure['first_code_line']:
-            body_end_index = self.structure['last_code_line']      # Get the last line of code as an index value
-        else:
-            body_end_index = body_start_index + 1
+        # if self.structure['first_code_line']:
+        #     body_end_index = self.structure['last_code_line']      # Get the last line of code as an index value
+        # else:
+        #     body_end_index = body_start_index + 1
 
-        if self.structure['last_line']:
-            footer_start_index = self.structure['last_line'] + 1
-        else:
-            footer_start_index = self.structure['last_line']
+        # if self.structure['last_line']:
+        #     footer_start_index = self.structure['last_line'] + 1
+        # else:
+        #     footer_start_index = self.structure['last_line']
 
         # Figure out the import line...
-        import_line = self.get_import_line(".models")               # Check to see if this is imported
-        admin_import_line = self.get_import_line("django.contrib")  # Does a check to see if the line is already included or not
+        # import_line = self.get_import_line(".models")               # Check to see if this is imported
+        admin_import_line = self.parser.get_import_line("django.contrib")  # Does a check to see if the line is already included or not
 
-        if import_line != None:     # Check to see if there is an import line or not
-            import_info = self.get_module_import_info(self.render_ctx['model_class_module'])
-            modules = import_info['import']     # Get the other modules already imported
-            import_lineno = import_info['first_line']
-            header_end_index = import_lineno    # Modify the slicing to adjust for the import line.
-            body_start_index = import_lineno
+        # if import_line != None:     # Check to see if there is an import line or not
+        #     import_info = self.get_module_import_info(self.render_ctx['model_class_module'])
+        #     modules = import_info['import']     # Get the other modules already imported
+        #     import_lineno = import_info['first_line']
+        #     header_end_index = import_lineno    # Modify the slicing to adjust for the import line.
+        #     body_start_index = import_lineno
 
         #######
         # SORTING SLICE POINTS
 
-        if header_end_index:
-            print("Header Line Index: 0-%d" % (header_end_index) )
-        else:
-            print("Header Line Index: No Header")
+        # if header_end_index:
+        #     print("Header Line Index: 0-%d" % (header_end_index) )
+        # else:
+        #     print("Header Line Index: No Header")
 
         # if self.structure['first_import_line'] == None:
         #     print("IMPORT LINES: None")
@@ -170,10 +171,10 @@ class Command(FileAppCommand):
         #     print("IMPORT LINES: %d-%d" % (self.structure['first_import_line'], self.structure['last_import_line']) )
 
         # Import line can be None
-        if admin_import_line == None:
-            print("ADMIN IMPORT INDEX: None")
-        else:
-            print("ADMIN IMPORT INDEX: %d" % (admin_import_line) )
+        # if admin_import_line == None:
+        #     print("ADMIN IMPORT INDEX: None")
+        # else:
+        #     print("ADMIN IMPORT INDEX: %d" % (admin_import_line) )
 
         # # Import line can be None
         # if import_line == None:
@@ -196,12 +197,13 @@ class Command(FileAppCommand):
 
         #########
         # SLICING
-        self.render_ctx['admin_header'] = "".join(admin_file_lines[:header_end_index]).strip()
+        self.render_ctx['admin_header'] = self.parser.get_header()      #"".join(admin_file_lines[:header_end_index]).strip()
+        self.render_ctx['admin_footer'] = self.parser.get_footer()
 
-        if footer_start_index:
-            self.render_ctx['admin_footer'] = "".join(admin_file_lines[footer_start_index:])
-        else:
-            self.render_ctx['admin_footer'] = ""
+        # if footer_start_index:
+        #     self.render_ctx['admin_footer'] = "".join(admin_file_lines[footer_start_index:])
+        # else:
+        #     self.render_ctx['admin_footer'] = ""
 
         # self.render_ctx['pre_admin'] = "".join(admin_file_lines[:header_end])
         # self.render_ctx['pre_register'] = "".join(admin_file_lines[:header_end])
@@ -212,7 +214,7 @@ class Command(FileAppCommand):
             # if it's not there, prepend the admin import
             self.render_ctx['model_class_import_statement'] = "from django.contrib import admin\n" + self.render_ctx['model_class_import_statement']
 
-        if self.render_ctx['model_admin'] in self.structure['class_list']:
+        if self.render_ctx['model_admin'] in self.parser.structure['class_list']:
             print("** %s admin already in '%s', skipping creation..." % (self.render_ctx['model_admin'], admin_file))
             self.render_ctx['create_model_admin'] = False
 
@@ -231,19 +233,19 @@ class Command(FileAppCommand):
         admin_result = admin_template.render(context=self.render_ctx)
 
 
-        # if self.debug:
-        #     print( horizontal_rule() )
-        #     print("admin.py RESULT:")
-        #     print( horizontal_rule() )
-        #     print(admin_result)
+        if self.debug:
+            print( horizontal_rule() )
+            print("admin.py RESULT:")
+            print( horizontal_rule() )
+            print(admin_result)
 
         # if self.write_files:
         #     self.write_file(admin_file, admin_result)
 
 
     def get_module_import_info(self, module):
-        i = self.structure['from_list'].index(module)
-        result = self.structure['imports'][i]
+        i = self.parser.structure['from_list'].index(module)
+        result = self.parser.structure['imports'][i]
         return result
 
 

@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-26 15:44:40
+# @Last Modified time: 2018-11-26 15:45:31
 #--------------------------------------------
 import re, os.path
 import ast
@@ -159,19 +159,19 @@ class FileAppCommand(AppCommand):
         FILE.close()
 
     def load_file(self, file_path):
-        result = get_file_lines(file_path)
-        return result
-        # self.parser = PythonFileParser(file_path)
+        # result = get_file_lines(file_path)
+        # return result
+        self.parser = PythonFileParser(file_path)
 
-    def parse_code(self, data):
-        '''
-        This is a tool that will return information about the Python code handed to it.
-        It can be used by tools to figure out where the last line of code is and where import
-        lines exist.  This is working to replace the use of regex to parse files.
-        '''
-        # Create the AST Tree and parse it
-        tree = ast.parse(data)
-        return ast_parse_code(tree)
+    # def parse_code(self, data):
+    #     '''
+    #     This is a tool that will return information about the Python code handed to it.
+    #     It can be used by tools to figure out where the last line of code is and where import
+    #     lines exist.  This is working to replace the use of regex to parse files.
+    #     '''
+    #     # Create the AST Tree and parse it
+    #     tree = ast.parse(data)
+    #     return ast_parse_code(tree)
 
 
     def create_import_line(self, module, path=None, modules=[], comment=None, sort=False):
@@ -218,14 +218,14 @@ class FileAppCommand(AppCommand):
         return result
 
 
-    def get_import_line(self, imp_module):
-        '''
-        Returns where an module is imported.  'None' is returned if not already included.
-        '''
-        result = None
+    # def get_import_line(self, imp_module):
+    #     '''
+    #     Returns where an module is imported.  'None' is returned if not already included.
+    #     '''
+    #     result = None
 
-        for imp in self.structure['imports']:
-            if  imp['from'] == imp_module:
-                result = imp['first_line']
+    #     for imp in self.structure['imports']:
+    #         if  imp['from'] == imp_module:
+    #             result = imp['first_line']
 
-        return result
+    #     return result

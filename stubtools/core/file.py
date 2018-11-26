@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-08 11:30:11
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-26 15:40:49
+# @Last Modified time: 2018-11-26 15:54:16
 # --------------------------------------------
 
 import os
@@ -184,5 +184,15 @@ class PythonFileParser():
         result['args'] = ast_parse_args(node)
         return result
 
+    def get_import_line(self, module):
+        '''
+        Returns where an module is imported.  'None' is returned if not already included.
+        '''
+        result = None
 
+        for imp in self.structure['imports']:
+            if  imp['from'] == module:
+                result = imp['first_line']
+
+        return result
 
