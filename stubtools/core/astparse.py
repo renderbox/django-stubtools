@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-14 15:34:48
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-15 11:23:56
+# @Last Modified time: 2018-11-26 14:32:42
 # --------------------------------------------
 
 import ast
@@ -51,15 +51,15 @@ def ast_parse_code(tree):
     return result
 
 def ast_first_and_last_line(items):
-    first = 0
-    last = 0
+    first = None
+    last = None
 
     if items:
         for item in items:
-            if first == 0 or item['first_line'] < first:
+            if first == None or item['first_line'] < first:
                 first = item['first_line']
 
-            if last == 0 or item['last_line'] > last:
+            if last == None or item['last_line'] > last:
                 last = item['last_line']
 
     return first, last
@@ -97,16 +97,17 @@ def ast_parse_function(node):
     return result
 
 
-def ast_last_line_number(obj, index= -1):
+def ast_last_line_number(node, index= -1):
     '''
     returns the last line number for the node
     '''
-    if hasattr(obj, "body"):
-        return ast_last_line_number(obj.body[index], index=index)
+    if hasattr(node, "body") and node.body:   # If it has the attr and it has a value...
+        return ast_last_line_number(node.body[index], index=index)
     else:
-        if hasattr(obj, "lineno"):
-            return obj.lineno
-    return None     # Return None if there is no code present
+        return getattr(node, "lineno", None)
+    #     if hasattr(obj, "lineno"):
+    #         return obj.lineno
+    # return None     # Return None if there is no code present
 
 
 def ast_first_line_number(node):
@@ -114,8 +115,11 @@ def ast_first_line_number(node):
     returns the first line number for the node
     '''
     if isinstance(node, ast.Module):     # In the case of the top level tree, check the first item in the module's body to get the first line number.
-        node = node.body[0]
-    return node.lineno
+        if node.body:
+            node = node.body[0]
+            return node.lineno
+    else:
+        return getattr(node, "lineno", None)
 
 
 def ast_class_inheritence_chain(node):

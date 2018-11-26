@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-19 16:28:54
+# @Last Modified time: 2018-11-22 11:46:58
 #--------------------------------------------
 
 import os.path
@@ -106,7 +106,7 @@ class Command(FileAppCommand):
             print("CONTEXT")
             print(kwargs)
 
-        render_ctx = self.get_context(app, model, model_class, **kwargs)
+        self.render_ctx = self.get_context(app, model, model_class, **kwargs)
 
         # #######################
         # # PARSE models.py
@@ -115,28 +115,28 @@ class Command(FileAppCommand):
         # Slice and Dice!
         data_lines = get_file_lines(model_file)
         line_count = len(data_lines)
-        structure = self.parse_code("".join(data_lines))
+        self.structure = self.parse_code("".join(data_lines))
 
         if self.debug:
             print( horizontal_rule() )
             print("FILE STRUCTURE (%s):" % model_file)
-            self.pp.pprint(structure)
+            self.pp.pprint(self.structure)
 
         # check to see if the model is already in models.py
-        if render_ctx['model'] in structure['class_list']:
-            print("** %s model already in '%s', skipping creation" % (render_ctx['model'], model_file))
-            render_ctx['create_model'] = False
+        if self.render_ctx['model'] in self.structure['class_list']:
+            print("** %s model already in '%s', skipping creation" % (self.render_ctx['model'], model_file))
+            self.render_ctx['create_model'] = False
 
         # Establish the Segments
-        if structure['first_import_line']:
-            body_start_index = structure['last_import_line']
+        if self.structure['first_import_line']:
+            body_start_index = self.structure['last_import_line']
             header_end_index = body_start_index
         else:
             body_start_index = 0
             header_end_index = body_start_index
 
-        if structure['first_code_line']:
-            body_end_index = structure['last_code_line']      # Get the last line of code as an index value
+        if self.structure['first_code_line']:
+            body_end_index = self.structure['last_code_line']      # Get the last line of code as an index value
         else:
             body_end_index = body_start_index + 1
 
@@ -146,19 +146,19 @@ class Command(FileAppCommand):
         comment = None
 
         # Check to see if the needed 'from' module is already being loaded.  If so, adjust where the header ends and the body starts
-        if render_ctx['model_class_module'] in structure['from_list']:
-            i = structure['from_list'].index(render_ctx['model_class_module'])
-            import_info = structure['imports'][i]
+        if self.get_import_line(self.render_ctx['model_class_module']):
+            i = self.structure['from_list'].index(self.render_ctx['model_class_module'])
+            import_info = self.structure['imports'][i]
             modules = import_info['import']
             import_lineno = import_info['first_line']
             header_end_index = import_lineno - 1
             body_start_index = import_lineno
 
         # Segment Values
-        render_ctx['model_import_statement'] = self.create_import_line(render_ctx['model_class_import'], path=render_ctx['model_class_module'], modules=modules, comment=comment)
-        render_ctx['model_header'] = "".join(data_lines[:header_end_index])         # In between the first line and the module import
-        render_ctx['model_body'] = "".join(data_lines[body_start_index:body_end_index])      # between the import line and where the model needs to be added
-        render_ctx['model_footer'] = "".join(data_lines[footer_start_index:])         # after the model code
+        self.render_ctx['model_import_statement'] = self.create_import_line(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'], modules=modules, comment=comment)
+        self.render_ctx['model_header'] = "".join(data_lines[:header_end_index])         # In between the first line and the module import
+        self.render_ctx['model_body'] = "".join(data_lines[body_start_index:body_end_index])      # between the import line and where the model needs to be added
+        self.render_ctx['model_footer'] = "".join(data_lines[footer_start_index:])         # after the model code
 
         #######################
         # RENDER THE TEMPLATES
@@ -167,12 +167,12 @@ class Command(FileAppCommand):
         if self.debug:
             print( horizontal_rule() )
             print("RENDER CONTEXT:")
-            self.pp.pprint(render_ctx)
+            self.pp.pprint(self.render_ctx)
 
         model_template = get_template('stubtools/stubmodel/model.py.j2', using='jinja2')
-        model_result = model_template.render(context=render_ctx)
+        model_result = model_template.render(context=self.render_ctx)
 
-        if render_ctx['create_model'] and not self.debug:
+        if self.render_ctx['create_model'] and not self.debug:
             self.write_file(model_file, model_result)
         
         if self.debug:
@@ -182,18 +182,17 @@ class Command(FileAppCommand):
 
         # This lets the uer create new views to match
 
-        if render_ctx['create_model_views']:
+        if self.render_ctx['create_model_views']:
             from stubtools.management.commands.stubview import Command as ViewCommand
             vc = ViewCommand()
             vc.debug = self.debug
             view_kwargs = {}
 
-            if render_ctx['create_model_detail']:
-                vc.process(app, render_ctx['model_name'], "django.views.generic.detail.DetailView", model=render_ctx['model'])
+            if self.render_ctx['create_model_detail']:
+                vc.process(app, self.render_ctx['model_name'], "django.views.generic.detail.DetailView", model=self.render_ctx['model'])
                 view_kwargs['template_in_app'] = vc.render_ctx['template_in_app']
 
-            if render_ctx['create_model_list']:
-                vc.process(app, render_ctx['model_name'], "django.views.generic.list.ListView", model=render_ctx['model'], **view_kwargs)
+            if self.render_ctx['create_model_list']:
+                vc.process(app, self.render_ctx['model_name'], "django.views.generic.list.ListView", model=self.render_ctx['model'], **view_kwargs)
 
-        self.render_ctx = render_ctx    # Appended to the end so it can be queried after.
 

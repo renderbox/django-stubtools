@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-20 12:15:18
+# @Last Modified time: 2018-11-20 14:56:48
 #--------------------------------------------
 
 import re, os.path
@@ -14,11 +14,10 @@ from django.core.management.base import CommandError
 from django.views.generic.base import View
 from django.template.loader import get_template
 
-from stubtools.core import FileAppCommand, class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case, parse_app_input, get_file_lines
+from stubtools.core import FileAppCommand, class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case, parse_app_input
 from stubtools.core.prompt import ask_question, ask_yes_no_question, selection_list, horizontal_rule
 from stubtools.core.parse import IMPORT_REGEX, get_classes_and_functions_start, get_pattern_line, get_all_pattern_lines, get_classes_and_functions, get_import_range
 from stubtools.core.view_classes import VIEW_CLASS_DEFAULT_SETTINGS, VIEW_CLASS_SETTINGS, STUBTOOLS_IGNORE_MODULES
-from stubtools.core.file import write_file
 
 
 class Command(FileAppCommand):
@@ -201,7 +200,7 @@ class Command(FileAppCommand):
 
         # Slice and Dice!
         print(self.view_file)
-        data_lines = get_file_lines(self.view_file)
+        data_lines = self.load_file(self.view_file)
         line_count = len(data_lines)
         self.structure = self.parse_code("".join(data_lines))
 
@@ -269,7 +268,7 @@ class Command(FileAppCommand):
         # ]
 
         # Slice and Dice!
-        data_lines = get_file_lines(self.url_file)
+        data_lines = self.load_file(self.url_file)
         line_count = len(data_lines)
 
         resource_pattern_start = get_pattern_line("(urlpatterns =)", data_lines, default=line_count)

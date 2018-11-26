@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-20 12:04:10
+# @Last Modified time: 2018-11-26 15:44:40
 #--------------------------------------------
 import re, os.path
 import ast
@@ -14,6 +14,7 @@ from django.core.management.base import AppCommand
 from django.conf import settings
 
 from stubtools.core.astparse import ast_parse_code
+from stubtools.core.file import PythonFileParser
 
 import django
 
@@ -142,6 +143,7 @@ class FileAppCommand(AppCommand):
     debug = False       # Should move this to the logger
     write_files = True
     logger = logging.getLogger(__name__)
+    structure = {}
 
     def write_file(self, file_path, data, create_path=True):
         full_path = os.path.abspath(file_path)          # Make it a full path to reduce issues in parsing direcotry from file
@@ -155,6 +157,11 @@ class FileAppCommand(AppCommand):
         FILE = open(full_path, "w")
         FILE.write(data)
         FILE.close()
+
+    def load_file(self, file_path):
+        result = get_file_lines(file_path)
+        return result
+        # self.parser = PythonFileParser(file_path)
 
     def parse_code(self, data):
         '''
@@ -188,12 +195,12 @@ class FileAppCommand(AppCommand):
         return result
 
 
-    def get_class_settings(self, root_class, ignore_modules=[], settings={}):
+    def get_class_settings(self, root_class, ignore_modules=[]):
 
         classes = get_all_subclasses(root_class, ignore_modules=ignore_modules)
 
         result = {}
-        result.update(settings)
+        result.update(self.settings)
 
         for cl in classes:
             class_name = cl.__name__    # Get the short name for the class
@@ -210,3 +217,15 @@ class FileAppCommand(AppCommand):
 
         return result
 
+
+    def get_import_line(self, imp_module):
+        '''
+        Returns where an module is imported.  'None' is returned if not already included.
+        '''
+        result = None
+
+        for imp in self.structure['imports']:
+            if  imp['from'] == imp_module:
+                result = imp['first_line']
+
+        return result

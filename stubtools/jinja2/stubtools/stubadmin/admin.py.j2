@@ -1,5 +1,5 @@
-{{ pre_import }}{% if not admin_import %}from django.contrib import admin{% endif %}
-from .models import {% for model in models %}{{ model }}{{ ", " if not loop.last }}{% endfor %}
+{{ admin_header }}
+{{ model_class_import_statement }}
 {{ pre_admin }}
 {% if not pre_admin %}
 ###############
@@ -15,13 +15,13 @@ from .models import {% for model in models %}{{ model }}{{ ", " if not loop.last
 ###############
 # MODEL ADMINS
 ###############{% endif %}
-
+{% if create_model_admin %}
 class {{ model_admin }}(admin.ModelAdmin):
     pass
-{% if not pre_registration %}
+{% endif %}{% if not pre_registration %}
 ###############
 # REGISTRATION
 ###############{% endif %}
 {{ pre_registration }}
 admin.site.register({{ model }}, {{ model_admin }})
-{{ post_registration }}
+{{ admin_footer }}
