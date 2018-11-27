@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-26 16:00:52
+# @Last Modified time: 2018-11-27 10:31:58
 #--------------------------------------------
 
 import os.path
@@ -24,12 +24,6 @@ from stubtools.core.prompt import horizontal_rule, selection_list
 class Command(FileAppCommand):
     args = '<app.model_name>'
     help = 'creates the admin setup for a model class'
-    # class_regex = re.compile(r"class (\w+)\(.+\):")
-    # import_line_regex = re.compile(r"^from django.contrib import (.+)", re.MULTILINE)
-    # model_import_line_regex = re.compile(r"^from .models import (.+)", re.MULTILINE)
-    # imports_regex = re.compile(r"(import|from)")
-    # func_regex = re.compile(r"(def|class)")
-    # admin_site_register_regex = re.compile(r"admin.site.register")
     debug = True
 
 
@@ -78,8 +72,6 @@ class Command(FileAppCommand):
         model_list = list(set(model_list))
         model_list.sort()
 
-        result['model_class_imports'] = ", ".join(model_list)
-
         return result
 
 
@@ -89,10 +81,6 @@ class Command(FileAppCommand):
 
         print("ADMIN FILE: %s" % admin_file)
 
-        import_line = False
-        import_entry = False
-        first_class_line = 0
-        last_import_line = 0
         app_models = []
 
         if not model:
@@ -103,7 +91,7 @@ class Command(FileAppCommand):
 
         self.render_ctx = self.get_context(app, model, app_models=app_models, **kwargs)
 
-        admin_file_lines = self.load_file(admin_file)
+        self.load_file(admin_file)
 
 
         #######################
@@ -123,10 +111,13 @@ class Command(FileAppCommand):
         #########
         # FILE PARTS
 
-        self.render_ctx['admin_header'] = self.parser.get_header()
-        self.render_ctx['admin_footer'] = self.parser.get_footer()
+        self.parser.set_import_slice(".models")
 
-        self.render_ctx['model_class_import_statement'] = self.create_import_line(self.render_ctx['model'], path=self.render_ctx['model_class_module'], modules=modules, comment=comment)
+        self.render_ctx['header'] = self.parser.get_header()
+        self.render_ctx['footer'] = self.parser.get_footer()
+        self.render_ctx['body'] = self.parser.get_body()
+
+        self.render_ctx['model_class_import_statement'] = self.parser.create_import_string(self.render_ctx['model'], path=self.render_ctx['model_class_module'])
 
         if admin_import_line == None:       # if it's not there, prepend the admin import line
             self.render_ctx['add_django_contrib_import_statement'] = True
@@ -134,6 +125,10 @@ class Command(FileAppCommand):
         if self.render_ctx['model_admin'] in self.parser.structure['class_list']:
             print("** %s admin already in '%s', skipping creation..." % (self.render_ctx['model_admin'], admin_file))
             self.render_ctx['create_model_admin'] = False
+            self.render_ctx['register_model_admin'] = False
+        else:
+            # Check to see if this is already in the AST
+            self.render_ctx['register_model_admin'] = True
 
         #######################
         # RENDER THE TEMPLATES
@@ -155,8 +150,10 @@ class Command(FileAppCommand):
             print( horizontal_rule() )
             print(admin_result)
 
-        # if self.write_files:
-        #     self.write_file(admin_file, admin_result)
+        if self.write_files:
+            self.write_file(admin_file, admin_result)
+            print( horizontal_rule() )
+            print("Wrote File: %s" % admin_file)
 
 
     def get_module_import_info(self, module):

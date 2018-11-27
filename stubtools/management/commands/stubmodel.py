@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-22 11:46:58
+# @Last Modified time: 2018-11-26 17:47:41
 #--------------------------------------------
 
 import os.path
@@ -42,9 +42,10 @@ class Command(FileAppCommand):
 
         field_classes = [ "%s.%s" % (x.__module__, x.__name__) for x in get_all_subclasses(Field, ignore_modules=["django.contrib.contenttypes"]) ]
 
-        model_classes = ['django.db.models.Model', 'django.contrib.auth.models.AbstractUser']
+        model_classes = ['django.db.models.Model']
         model_classes.extend([ "%s.%s" % (x.__module__, x.__name__) for x in get_all_subclasses(Model, ignore_modules=['django.contrib.contenttypes.models', 'django.contrib.admin.models', 'django.contrib.sessions', 'django.contrib.auth.base_user', 'django.contrib.auth.models', 'allauth']) ])
         model_classes = list(set(model_classes))
+        model_classes.sort()
 
         model_class_settings = {}
         model_key = selection_list(model_classes, as_string=True, title="Select a Model Class")
@@ -59,7 +60,7 @@ class Command(FileAppCommand):
         model_name = "_".join(split_camel_case(model)).lower()
 
         render_ctx = {'app':app, 'model_key':model_key, 'model':model, 'model_name':model_name, 'attributes':[],
-                        'model_header':"", 'model_import_statement':"", 'model_body':"", 'model_footer':"", 'create_model':True }
+                        'header':"", 'import_statement':"", 'body':"", 'footer':"", 'create_model':True }
 
         if kwargs:
             render_ctx.update(kwargs)
@@ -108,57 +109,69 @@ class Command(FileAppCommand):
 
         self.render_ctx = self.get_context(app, model, model_class, **kwargs)
 
+        self.load_file(model_file)
+
         # #######################
         # # PARSE models.py
         # #######################
 
-        # Slice and Dice!
-        data_lines = get_file_lines(model_file)
-        line_count = len(data_lines)
-        self.structure = self.parse_code("".join(data_lines))
-
         if self.debug:
             print( horizontal_rule() )
-            print("FILE STRUCTURE (%s):" % model_file)
-            self.pp.pprint(self.structure)
+            print("FILE STRUCTURE:")
+            self.pp.pprint(self.parser.structure)
+
+        # # Slice and Dice!
+        # data_lines = get_file_lines(model_file)
+        # line_count = len(data_lines)
+        # self.structure = self.parse_code("".join(data_lines))
+
+        # if self.debug:
+        #     print( horizontal_rule() )
+        #     print("FILE STRUCTURE (%s):" % model_file)
+        #     self.pp.pprint(self.structure)
 
         # check to see if the model is already in models.py
-        if self.render_ctx['model'] in self.structure['class_list']:
+        if self.render_ctx['model'] in self.parser.structure['class_list']:
             print("** %s model already in '%s', skipping creation" % (self.render_ctx['model'], model_file))
             self.render_ctx['create_model'] = False
 
-        # Establish the Segments
-        if self.structure['first_import_line']:
-            body_start_index = self.structure['last_import_line']
-            header_end_index = body_start_index
-        else:
-            body_start_index = 0
-            header_end_index = body_start_index
+        # # Establish the Segments
+        # if self.structure['first_import_line']:
+        #     body_start_index = self.structure['last_import_line']
+        #     header_end_index = body_start_index
+        # else:
+        #     body_start_index = 0
+        #     header_end_index = body_start_index
 
-        if self.structure['first_code_line']:
-            body_end_index = self.structure['last_code_line']      # Get the last line of code as an index value
-        else:
-            body_end_index = body_start_index + 1
+        # if self.structure['first_code_line']:
+        #     body_end_index = self.structure['last_code_line']      # Get the last line of code as an index value
+        # else:
+        #     body_end_index = body_start_index + 1
 
-        footer_start_index = body_end_index
+        # footer_start_index = body_end_index
 
-        modules = []        # List of other modules being loaded
-        comment = None
+        # modules = []        # List of other modules being loaded
+        # comment = None
 
-        # Check to see if the needed 'from' module is already being loaded.  If so, adjust where the header ends and the body starts
-        if self.get_import_line(self.render_ctx['model_class_module']):
-            i = self.structure['from_list'].index(self.render_ctx['model_class_module'])
-            import_info = self.structure['imports'][i]
-            modules = import_info['import']
-            import_lineno = import_info['first_line']
-            header_end_index = import_lineno - 1
-            body_start_index = import_lineno
+        # # Check to see if the needed 'from' module is already being loaded.  If so, adjust where the header ends and the body starts
+        # if self.get_import_line(self.render_ctx['model_class_module']):
+        #     i = self.structure['from_list'].index(self.render_ctx['model_class_module'])
+        #     import_info = self.structure['imports'][i]
+        #     modules = import_info['import']
+        #     import_lineno = import_info['first_line']
+        #     header_end_index = import_lineno - 1
+        #     body_start_index = import_lineno
 
         # Segment Values
-        self.render_ctx['model_import_statement'] = self.create_import_line(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'], modules=modules, comment=comment)
-        self.render_ctx['model_header'] = "".join(data_lines[:header_end_index])         # In between the first line and the module import
-        self.render_ctx['model_body'] = "".join(data_lines[body_start_index:body_end_index])      # between the import line and where the model needs to be added
-        self.render_ctx['model_footer'] = "".join(data_lines[footer_start_index:])         # after the model code
+        # self.render_ctx['model_import_statement'] = self.create_import_line(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'], modules=modules, comment=comment)
+        # self.render_ctx['model_header'] = "".join(data_lines[:header_end_index])         # In between the first line and the module import
+        # self.render_ctx['model_body'] = "".join(data_lines[body_start_index:body_end_index])      # between the import line and where the model needs to be added
+        # self.render_ctx['model_footer'] = "".join(data_lines[footer_start_index:])         # after the model code
+
+        self.render_ctx['import_statement'] = self.create_import_line(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'])
+        self.render_ctx['header'] = self.parser.get_header()
+        self.render_ctx['footer'] = self.parser.get_footer()
+        self.render_ctx['body'] = self.parser.get_body()
 
         #######################
         # RENDER THE TEMPLATES

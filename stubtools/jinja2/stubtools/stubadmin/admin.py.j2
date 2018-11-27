@@ -1,28 +1,19 @@
-{{ admin_header }}{% if add_django_contrib_import_statement %}
+{{ header }}{% if add_django_contrib_import_statement %}
 from django.contrib import admin
 {% endif %}{{ model_class_import_statement }}
-{{ pre_admin }}
-{% if not pre_admin %}
-###############
-# ACTIONS
-###############
-
-
-###############
-# INLINES
-###############
-
-
+{{ body }}
+{% if not body %}
 ###############
 # MODEL ADMINS
-###############{% endif %}
-{% if create_model_admin %}
-class {{ model_admin }}(admin.ModelAdmin):
+###############
+{% endif %}
+{% if create_model_admin %}class {{ model_admin }}(admin.ModelAdmin):
     pass
-{% endif %}{% if not pre_registration %}
+{% endif %}
+{% if not pre_registration %}
 ###############
 # REGISTRATION
-###############{% endif %}
-{{ pre_registration }}
+###############{% endif %}{{ pre_registration }}
+{% if register_model_admin %}
 admin.site.register({{ model }}, {{ model_admin }})
-{{ admin_footer }}
+{% endif %}{{ footer }}
