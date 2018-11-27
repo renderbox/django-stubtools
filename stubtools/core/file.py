@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-08 11:30:11
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-26 15:54:16
+# @Last Modified time: 2018-11-26 16:31:27
 # --------------------------------------------
 
 import os
@@ -196,3 +196,36 @@ class PythonFileParser():
 
         return result
 
+    def create_import_string(self, module, path=None, sort=False):
+        '''
+        example:
+        path = django.db
+        module = MyModel
+        '''
+        mod_list = []                   # Start with just the required
+        comment = ""
+
+        if path in self.structure['from_list']:             # if the module passed in is in the Python File, use that
+            i = self.structure['from_list'].index(path)
+            mod_list.extend( self.structure['imports'][i]['import'] )
+
+            # Look for comment and append if needed
+            parts = self.data_lines[self.structure['imports'][i].lineno - 1].split("#")
+            if len(parts) > 1:
+                comment = "#".join(parts[1:])
+
+        if module not in mod_list:
+            mod_list.append(module)
+
+        if sort:
+            mod_list.sort()             # Sort the modules
+
+        if path:
+            result = "from %s import %s" % ( path, ", ".join(mod_list) )
+        else:
+            result = "import %s" % ( ", ".join(mod_list) )
+
+        if comment:
+            result += "    # %s" % comment
+
+        return result
