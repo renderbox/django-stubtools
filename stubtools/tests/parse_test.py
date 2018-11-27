@@ -3,9 +3,9 @@
 # @Author: Grant Viklund
 # @Date:   2015-10-27 13:59:25
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-20 11:40:05
+# @Last Modified time: 2018-11-26 17:51:00
 #--------------------------------------------
-from unittest import TestCase
+from django.test import TestCase
 from stubtools.core.parse import get_import_range
 from stubtools.core import parse_app_input
 
