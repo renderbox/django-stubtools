@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-08 11:30:11
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-26 16:31:27
+# @Last Modified time: 2018-11-27 11:23:03
 # --------------------------------------------
 
 import os
@@ -30,11 +30,12 @@ class PythonFileParser():
     structure = {}
     data_lines = []
 
-    def __init__(self, file_path):
+    def __init__(self, file_path=None):
 
         self.file_path = file_path
 
-        self.load_file()
+        if file_path:
+            self.load_file()
 
     def load_file(self):
         FILE = open( self.file_path, "r")
@@ -42,7 +43,7 @@ class PythonFileParser():
         FILE.close()
 
         self.ast_parse_code()
-        self.set_slice_indexes()
+        self.set_import_slice()
 
     def ast_parse_code(self):
         '''
@@ -84,7 +85,7 @@ class PythonFileParser():
         self.structure['class_list'] = [ f['name'] for f in self.structure['classes'] ]      # Used to see if a line is already imported
 
 
-    def set_slice_indexes(self, module=None):
+    def set_import_slice(self, module=None):
         '''
         Rules:
         - If a module is present in the file, the header ends the line before.  The assumption will be that this is the line your want to update.
@@ -95,26 +96,41 @@ class PythonFileParser():
         # Set Header End...
         header_end_index = None
         footer_start_index = None
-        body_start_index = self.structure['first_code_line']
-        body_end_index = self.structure['last_code_line']
+
+        if self.structure['first_code_line'] == None:
+            body_start_index = self.structure['first_code_line']
+        else:
+            body_start_index = self.structure['first_code_line'] - 1
+
+        if self.structure['first_code_line'] == None:               # If there is no code in the file...
+            body_end_index = self.structure['last_code_line']
+        else:
+            body_end_index = self.structure['last_code_line'] - 1   # 'line' values start at 1, 'index' values start at 0
 
         # HEADER
         if self.structure['last_import_line'] != None:
-            if module and module in self.structure['from_list']:    # if the module passed in is in the Python File, use that
-                i = self.structure['from_list'].index(module)
-                header_end_index = self.structure['imports'][i]['node'].lineno - 1
+            # print("LOOKING FOR %s" % module)
+
+            check_mod = module
+
+            if module:
+                if module.startswith("."):      # AST does not provide the '.' as part of the name when loading a local path module
+                    check_mod = module[1:]
+
+            if check_mod and check_mod in self.structure['from_list']:    # if the module passed in is in the Python File, use that
+                i = self.structure['from_list'].index(check_mod)
+                # print("MODULE FOUND AT: %d" % self.structure['imports'][i]['node'].lineno)
+                header_end_index = self.structure['imports'][i]['node'].lineno - 2
                 body_start_index = self.structure['imports'][i]['node'].lineno
             else:
-                header_end_index = self.structure['last_import_line']
+                header_end_index = self.structure['last_import_line']           # WORKS CORRECTLY
 
         # FOOTER
-        if header_end_index == None:
+        if self.structure['last_code_line'] != None and self.structure['last_code_line'] > header_end_index:
             footer_start_index = self.structure['last_code_line']
-        else:
-            if self.structure['last_code_line'] != None and self.structure['last_code_line'] > header_end_index:
-                footer_start_index = self.structure['last_code_line']
-            else:
-                footer_start_index = header_end_index
+
+        if body_start_index and footer_start_index == None:     # If there is no footer, but there is a body, body should go to the end of the lines
+            body_end_index = self.structure['last_line'] - 1
 
         self.structure['header_end_index'] = header_end_index
         self.structure['body_start_index'] = body_start_index
@@ -124,7 +140,7 @@ class PythonFileParser():
 
     def get_header(self, module=None):
         if self.structure['header_end_index'] != None:
-            return "".join(self.data_lines[:self.structure['header_end_index']])
+            return "".join(self.data_lines[:(self.structure['header_end_index'] + 1)])  # Slicing does an "Up to" aproach, thus the +1
         return ""
 
     # def get_body_start_end_indexes(self, module=None):
@@ -205,17 +221,26 @@ class PythonFileParser():
         mod_list = []                   # Start with just the required
         comment = ""
 
-        if path in self.structure['from_list']:             # if the module passed in is in the Python File, use that
-            i = self.structure['from_list'].index(path)
+        check_mod = path
+
+        if check_mod.startswith("."):
+            check_mod = check_mod[1:]
+
+        if check_mod in self.structure['from_list']:             # if the module passed in is in the Python File, use that
+            i = self.structure['from_list'].index(check_mod)
             mod_list.extend( self.structure['imports'][i]['import'] )
+            print("EXTENDING THE MODULE LIST")
 
             # Look for comment and append if needed
-            parts = self.data_lines[self.structure['imports'][i].lineno - 1].split("#")
+            parts = self.data_lines[ self.structure['imports'][i]['node'].lineno - 1 ].split("#")    # Split off any comments
             if len(parts) > 1:
                 comment = "#".join(parts[1:])
 
         if module not in mod_list:
             mod_list.append(module)
+
+        print("MOD LIST")
+        print(mod_list)
 
         if sort:
             mod_list.sort()             # Sort the modules
