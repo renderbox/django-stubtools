@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-20 14:56:48
+# @Last Modified time: 2018-11-27 11:38:27
 #--------------------------------------------
 
 import re, os.path
@@ -18,7 +18,7 @@ from stubtools.core import FileAppCommand, class_name, version_check, get_all_su
 from stubtools.core.prompt import ask_question, ask_yes_no_question, selection_list, horizontal_rule
 from stubtools.core.parse import IMPORT_REGEX, get_classes_and_functions_start, get_pattern_line, get_all_pattern_lines, get_classes_and_functions, get_import_range
 from stubtools.core.view_classes import VIEW_CLASS_DEFAULT_SETTINGS, VIEW_CLASS_SETTINGS, STUBTOOLS_IGNORE_MODULES
-
+from stubtools.core.file import PythonFileParser
 
 class Command(FileAppCommand):
     args = '<app.view.view_class>'
@@ -200,37 +200,42 @@ class Command(FileAppCommand):
 
         # Slice and Dice!
         print(self.view_file)
-        data_lines = self.load_file(self.view_file)
-        line_count = len(data_lines)
-        self.structure = self.parse_code("".join(data_lines))
+        self.load_file(self.view_file)
+        # data_lines = self.load_file(self.view_file)
+        # line_count = len(data_lines)
+        # self.structure = self.parse_code("".join(data_lines))
 
         print( horizontal_rule() )
         print("FILE STRUCTURE:")
-        self.pp.pprint(self.structure)
+        self.pp.pprint(self.parser.structure)
 
         # check to see if the model is already in views.py
-        if self.render_ctx['resource_class'] in self.structure['class_list']:
+        if self.render_ctx['resource_class'] in self.parser.structure['class_list']:
             print("** %s view already in '%s', skipping creation" % (self.render_ctx['view'], self.view_file))
             self.render_ctx['create_view'] = False
             return
 
         # Establish the Segments
-        import_start_index = 0
-        import_end_index = 0
-        class_func_start = get_classes_and_functions_start(data_lines)
-        class_func_end = line_count
+        # import_start_index = 0
+        # import_end_index = 0
+        # class_func_start = get_classes_and_functions_start(data_lines)
+        # class_func_end = line_count
 
         # Segment Values
-        pre_import = None
-        pre_view = None
-        post_view = None
+        # pre_import = None
+        # pre_view = None
+        # post_view = None
 
-        import_start_index, import_end_index = get_import_range("^from %(view_class_module)s import (.+)" % self.render_ctx, data_lines[:class_func_start])
+        # import_start_index, import_end_index = get_import_range("^from %(view_class_module)s import (.+)" % self.render_ctx, data_lines[:class_func_start])
         
-        if import_start_index > import_end_index:
-            self.render_ctx['view_import_statement'] = create_import_line(data_lines[import_start_index], self.render_ctx['view_class_module'], self.render_ctx['view_class'])
-        else:
-            self.render_ctx['view_import_statement'] = "from %(view_class_module)s import %(view_class)s" % self.render_ctx
+        # if import_start_index > import_end_index:
+        #     self.render_ctx['view_import_statement'] = create_import_line(data_lines[import_start_index], self.render_ctx['view_class_module'], self.render_ctx['view_class'])
+        # else:
+        #     self.render_ctx['view_import_statement'] = "from %(view_class_module)s import %(view_class)s" % self.render_ctx
+
+        self.render_ctx['view_import_statement'] = self.parser.create_import_string(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'])
+        # self.render_ctx['import_statement'] = self.create_import_line(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'])
+
 
         # 3) Find where the post_view starts
 
@@ -238,19 +243,23 @@ class Command(FileAppCommand):
         # This is here to provide recognition for footers on files that may be there
         # todo: Add support for """/''' blocks?
 
-        for c, line in reversed(list(enumerate(data_lines))):
-            cleaned_line = line.strip()
+        # for c, line in reversed(list(enumerate(data_lines))):
+        #     cleaned_line = line.strip()
 
-            if cleaned_line:
-                if not cleaned_line.startswith("#"):
-                    class_func_end = c + 1
-                    break
+        #     if cleaned_line:
+        #         if not cleaned_line.startswith("#"):
+        #             class_func_end = c + 1
+        #             break
 
         # 4) Build the sections
 
-        self.render_ctx['view_header'] = "".join(data_lines[:import_start_index])
-        self.render_ctx['view_pre_view'] = "".join(data_lines[import_end_index:class_func_end])
-        self.render_ctx['view_footer'] = "".join(data_lines[class_func_end:])
+        self.render_ctx['view_header'] = self.parser.get_header()
+        self.render_ctx['view_pre_view'] = self.parser.get_footer()
+        self.render_ctx['view_footer'] = self.parser.get_body()
+
+        # self.render_ctx['header'] = self.parser.get_header()
+        # self.render_ctx['footer'] = self.parser.get_footer()
+        # self.render_ctx['body'] = self.parser.get_body()
 
         #######################
         # PARSE urls.py
@@ -268,8 +277,9 @@ class Command(FileAppCommand):
         # ]
 
         # Slice and Dice!
-        data_lines = self.load_file(self.url_file)
-        line_count = len(data_lines)
+        url_parser = PythonFileParser(self.url_file)
+        data_lines = url_parser.data_lines
+        line_count = url_parser.structure['linecount']
 
         resource_pattern_start = get_pattern_line("(urlpatterns =)", data_lines, default=line_count)
         resource_pattern_end = get_pattern_line("]", data_lines[resource_pattern_start:], default=0) + resource_pattern_start    # Look for the ']' after the urlpatterns

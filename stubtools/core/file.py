@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-08 11:30:11
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-27 11:23:03
+# @Last Modified time: 2018-11-28 11:13:00
 # --------------------------------------------
 
 import os
@@ -143,20 +143,10 @@ class PythonFileParser():
             return "".join(self.data_lines[:(self.structure['header_end_index'] + 1)])  # Slicing does an "Up to" aproach, thus the +1
         return ""
 
-    # def get_body_start_end_indexes(self, module=None):
-    #     if module and module in self.structure['from_list']:    # if the module passed in is in the Python File, use that
-    #         i = self.structure['from_list'].index(module)
-    #         body_start_index = self.structure['imports'][i]['node'].lineno
-    #     else:
-    #         body_start_index = self.structure['last_import_line']   # If the module is not there, use this line to start
-
-    #     return body_start_index, self.structure['last_code_line']   # Convert the line to an idex value
-
-
     def get_body(self, module=None):
         # body_start_index, body_end_index = self.get_body_start_end_indexes(module=module)
         if self.structure['body_start_index'] != None:
-            return "".join(self.data_lines[self.structure['body_start_index']:self.structure['body_end_index']])
+            return "".join(self.data_lines[self.structure['body_start_index']:self.structure['body_end_index'] + 1])
         return ""
 
     def get_footer(self):

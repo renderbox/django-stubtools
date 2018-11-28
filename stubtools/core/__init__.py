@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-26 15:45:31
+# @Last Modified time: 2018-11-27 11:28:34
 #--------------------------------------------
 import re, os.path
 import ast
@@ -195,12 +195,12 @@ class FileAppCommand(AppCommand):
         return result
 
 
-    def get_class_settings(self, root_class, ignore_modules=[]):
+    def get_class_settings(self, root_class, ignore_modules=[], settings={}):
 
         classes = get_all_subclasses(root_class, ignore_modules=ignore_modules)
 
         result = {}
-        result.update(self.settings)
+        result.update(settings)
 
         for cl in classes:
             class_name = cl.__name__    # Get the short name for the class
