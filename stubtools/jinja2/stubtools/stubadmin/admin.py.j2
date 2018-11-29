@@ -10,10 +10,10 @@ from django.contrib import admin
 {% if create_model_admin %}class {{ model_admin }}(admin.ModelAdmin):
     pass
 {% endif %}
-{% if not pre_registration %}
+{% if not registration %}
 ###############
 # REGISTRATION
-###############{% endif %}{{ pre_registration }}
-{% if register_model_admin %}
-admin.site.register({{ model }}, {{ model_admin }})
-{% endif %}{{ footer }}
+###############
+
+{% endif %}{{ registration }}{% if register_model_admin %}admin.site.register({{ model }}, {{ model_admin }}){% endif %}
+{{ footer }}

@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-08 11:30:11
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-28 15:27:49
+# @Last Modified time: 2018-11-28 17:33:01
 # --------------------------------------------
 
 import os
@@ -147,22 +147,30 @@ class PythonFileParser():
         self.structure['body_end_index'] = body_end_index
         self.structure['footer_start_index'] = footer_start_index
 
+    def get_text_slice(self, start_index, end_index):
+        '''
+        Returns the string, from start, up to and including the end_index
+        '''
+        return "".join(self.data_lines[start_index:end_index + 1])
 
     def get_header(self, module=None):
         if self.structure['header_end_index'] != None:
-            return "".join(self.data_lines[:(self.structure['header_end_index'] + 1)])  # Slicing does an "Up to" aproach, thus the +1
+            # return "".join(self.data_lines[:(self.structure['header_end_index'] + 1)])  # Slicing does an "Up to" aproach, thus the +1
+            return self.get_text_slice(0, self.structure['header_end_index'])
         return ""
 
     def get_body(self, module=None):
         # body_start_index, body_end_index = self.get_body_start_end_indexes(module=module)
         if self.structure['body_start_index'] != None:
-            return "".join(self.data_lines[self.structure['body_start_index']:self.structure['body_end_index'] + 1])
+            # return "".join(self.data_lines[self.structure['body_start_index']:self.structure['body_end_index'] + 1])
+            return self.get_text_slice(self.structure['body_start_index'], self.structure['body_end_index'])
         return ""
 
     def get_footer(self):
         # return "".join(self.data_lines[self.structure['last_code_line']:])
         if self.structure['footer_start_index'] != None:
-            return "".join(self.data_lines[self.structure['footer_start_index']:])
+            # return "".join(self.data_lines[self.structure['footer_start_index']:])
+            return self.get_text_slice(self.structure['footer_start_index'], -1)
         return ""
 
     def ast_first_and_last_line(self, items):

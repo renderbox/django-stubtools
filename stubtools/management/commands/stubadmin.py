@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-27 10:31:58
+# @Last Modified time: 2018-11-28 17:39:48
 #--------------------------------------------
 
 import os.path
@@ -115,7 +115,13 @@ class Command(FileAppCommand):
 
         self.render_ctx['header'] = self.parser.get_header()
         self.render_ctx['footer'] = self.parser.get_footer()
-        self.render_ctx['body'] = self.parser.get_body()
+
+        if self.parser.structure['expressions']:
+            self.render_ctx['body'] = self.parser.get_text_slice(self.parser.structure['body_start_index'], self.parser.structure['last_class_line'] - 1)
+            self.render_ctx['registration'] = self.parser.get_text_slice(self.parser.structure['last_class_line'], self.parser.structure['body_end_index'])
+        else:
+            self.render_ctx['body'] = self.parser.get_body()
+            self.render_ctx['registration'] = ''
 
         self.render_ctx['model_class_import_statement'] = self.parser.create_import_string(self.render_ctx['model'], path=self.render_ctx['model_class_module'])
 
