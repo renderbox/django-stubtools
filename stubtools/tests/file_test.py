@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2015-10-27 13:59:25
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-28 11:24:11
+# @Last Modified time: 2018-11-28 15:12:33
 #--------------------------------------------
 import os
 import pprint
@@ -123,7 +123,7 @@ class PythonFileParserTestCase(TestCase):
         self.assertEqual( parser.structure['last_code_line'], None )
 
         # Change Slice Point
-        parser.set_import_slice("django.db")
+        parser.set_import_slice(".models")
 
         self.assertEqual( parser.structure['header_end_index'], 8 )
         self.assertEqual( parser.structure['body_start_index'], None )
@@ -139,9 +139,26 @@ class PythonFileParserTestCase(TestCase):
         self.assertEqual( parser.structure['last_code_line'], 44 )
 
         # Change Slice Point
-        parser.set_import_slice("django.db")
+        parser.set_import_slice(".models")
 
-        self.assertEqual( parser.structure['header_end_index'], 8 )
-        self.assertEqual( parser.structure['body_start_index'], None )
-        self.assertEqual( parser.structure['body_end_index'], None )
-        self.assertEqual( parser.structure['footer_start_index'], None )
+        self.assertEqual( parser.structure['header_end_index'], 7 )
+        self.assertEqual( parser.structure['body_start_index'], 9 )
+        self.assertEqual( parser.structure['body_end_index'], 43 )
+        self.assertEqual( parser.structure['footer_start_index'], 44 )
+
+
+    def test_multiple_urls_file(self):
+        file_path = os.path.join(self.test_file_dir, 'urls_multiple.py')
+        parser = PythonFileParser( file_path )
+
+        self.assertEqual( parser.structure['first_import_line'], 8 )
+        self.assertEqual( parser.structure['last_import_line'], 10 )
+        self.assertEqual( parser.structure['last_code_line'], 15 )
+
+        # # Change Slice Point
+        # parser.set_import_slice(".models")
+
+        # self.assertEqual( parser.structure['header_end_index'], 7 )
+        self.assertEqual( parser.structure['body_start_index'], 10 )
+        # self.assertEqual( parser.structure['body_end_index'], 43 )
+        # self.assertEqual( parser.structure['footer_start_index'], 44 )

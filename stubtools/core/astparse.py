@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-14 15:34:48
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-26 14:32:42
+# @Last Modified time: 2018-11-28 15:45:43
 # --------------------------------------------
 
 import ast
@@ -96,6 +96,30 @@ def ast_parse_function(node):
     result['args'] = ast_parse_args(node)
     return result
 
+def ast_parse_expression_name(node):
+    '''
+    Neet to rework this so the whole chain is figured out.
+
+    exaple: admin.site.register(Category)
+    
+    like: 
+        'value.func.value.value.id'='admin'
+        'expn.value.func.value.attr'='site' 
+        for registering an Admin to a Model.
+    '''
+    function_name = node.value.func.attr
+
+    return function_name
+
+
+    # result = []
+    # for base in node.bases:
+    #     if hasattr(base, 'id'):
+    #         result.append(base.id)
+    #     else:
+    #         result.append(base.value.id + "." + base.attr)
+    # return result
+    
 
 def ast_last_line_number(node, index= -1):
     '''
@@ -104,7 +128,10 @@ def ast_last_line_number(node, index= -1):
     if hasattr(node, "body") and node.body:   # If it has the attr and it has a value...
         return ast_last_line_number(node.body[index], index=index)
     else:
-        return getattr(node, "lineno", None)
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.List):
+            return ast_last_line_number(node.value.elts[-1])    # Get the last item in the list.  Trying to compensate for multiline assignments.
+        else:
+            return getattr(node, "lineno", None)
     #     if hasattr(obj, "lineno"):
     #         return obj.lineno
     # return None     # Return None if there is no code present
@@ -137,7 +164,10 @@ def ast_parse_args(node):
     Parses the args passed into a function
     '''
     result = {'args':[], 'kwargs':[]}
-    args = node.args.args
+    if isinstance(node, ast.Expr):
+        args = node.value.args
+    else:
+        args = node.args.args
     defaults = node.args.defaults
 
     dlen = len(defaults)
@@ -147,6 +177,17 @@ def ast_parse_args(node):
         result['kwargs'] = [{a.arg:ast_parse_arg_defaults(b)} for a, b in zip(args[-1 * dlen:], defaults)]
     else:
         result['args'] = [a.arg for a in args]
+
+    return result
+
+def ast_parse_expression_args(node):
+    '''
+    Parses the args passed into a function
+    '''
+    result = {'args':[], 'kwargs':[]}
+
+    result['args'] = [arg.id for arg in node.value.args]
+    result['kwargs'] = node.value.keywords
 
     return result
 

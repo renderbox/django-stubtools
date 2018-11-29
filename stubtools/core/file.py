@@ -3,13 +3,15 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-08 11:30:11
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-28 11:13:00
+# @Last Modified time: 2018-11-28 15:27:49
 # --------------------------------------------
 
 import os
 import ast
 
-from .astparse import ast_first_line_number, ast_last_line_number, ast_parse_defaults, ast_class_inheritence_chain
+from .astparse import ast_first_line_number, ast_last_line_number, ast_parse_defaults, \
+                        ast_class_inheritence_chain, ast_parse_expression_name, ast_parse_args, \
+                        ast_parse_expression_args
 
 def write_file(file_path, data, create_path=True):
     full_path = os.path.abspath(file_path)          # Make it a full path to reduce issues in parsing direcotry from file
@@ -54,7 +56,7 @@ class PythonFileParser():
         data = "".join(self.data_lines)
         tree = ast.parse(data)
 
-        self.structure = {'imports':[], 'functions':[], 'classes':[], 'root':tree, 'linecount':len(self.data_lines)}
+        self.structure = {'imports':[], 'functions':[], 'classes':[], 'expressions':[], 'assignments':[], 'root':tree, 'linecount':len(self.data_lines)}
 
         self.structure['first_line'] = ast_first_line_number(tree)
         self.structure['last_line'] = ast_last_line_number(tree)
@@ -66,6 +68,10 @@ class PythonFileParser():
                 self.structure['functions'].append( self.ast_parse_function(node) )
             if isinstance(node, ast.ClassDef):
                 self.structure['classes'].append( self.ast_parse_class(node) )
+            if isinstance(node, ast.Expr):
+                self.structure['expressions'].append( self.ast_parse_expression(node) )
+            if isinstance(node, ast.Assign):
+                self.structure['assignments'].append( self.ast_parse_assignments(node) )
 
         # Determine the first and last import lines
         self.structure['first_import_line'], self.structure['last_import_line'] = self.ast_first_and_last_line(self.structure['imports'])
@@ -73,10 +79,14 @@ class PythonFileParser():
         # Determine the first and last class/function lines
         self.structure['first_function_line'], self.structure['last_function_line'] = self.ast_first_and_last_line(self.structure['functions'])
         self.structure['first_class_line'], self.structure['last_class_line'] = self.ast_first_and_last_line(self.structure['classes'])
+        self.structure['first_expression_line'], self.structure['last_expression_line'] = self.ast_first_and_last_line(self.structure['expressions'])
+        self.structure['first_assignment_line'], self.structure['last_assignment_line'] = self.ast_first_and_last_line(self.structure['assignments'])
 
         code = []
         code.extend(self.structure['functions'])
         code.extend(self.structure['classes'])
+        code.extend(self.structure['expressions'])
+        code.extend(self.structure['assignments'])
 
         self.structure['first_code_line'], self.structure['last_code_line'] = self.ast_first_and_last_line(code)
 
@@ -188,6 +198,22 @@ class PythonFileParser():
         result = ast_parse_defaults(node)
         result['name'] = node.name
         result['args'] = ast_parse_args(node)
+        return result
+
+    def ast_parse_expression(self, node):
+        result = ast_parse_defaults(node)
+        result['name'] = ast_parse_expression_name(node)
+        result['args'] = ast_parse_expression_args(node)   #list([arg.id for arg in node.value.args])
+        # result['args'] = ast_parse_args(node.value)
+        return result
+
+    def ast_parse_assignments(self, node):
+        result = ast_parse_defaults(node)
+        result['name'] = node.targets[0].id
+
+        # if isinstance(node.value, ast.List):
+        # Parse the list
+
         return result
 
     def get_import_line(self, module):
