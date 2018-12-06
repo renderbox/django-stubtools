@@ -3,12 +3,13 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-27 11:28:34
+# @Last Modified time: 2018-12-05 16:15:26
 #--------------------------------------------
 import re, os.path
 import ast
 import pprint
 import logging
+import importlib
 
 from django.core.management.base import AppCommand
 from django.conf import settings
@@ -17,6 +18,8 @@ from stubtools.core.astparse import ast_parse_code
 from stubtools.core.file import PythonFileParser
 
 import django
+
+from django.template.loader import get_template
 
 # Compiled REGEX Patterns
 name_split_regex = re.compile("([A-Z][a-z]+)")
@@ -217,6 +220,26 @@ class FileAppCommand(AppCommand):
 
         return result
 
+
+    def get_app_models(self, app):
+        model_file = "%s/models.py" % app
+
+        model_file_parser = PythonFileParser(model_file)
+
+        result = [x['name'] for x in model_file_parser.structure['classes'] if 'models.Model' in x['inheritence_chain'] ]
+
+        return result
+
+
+    def get_model_fields(self, app, model):
+
+        model_mod = importlib.import_module('%s.models' % app)
+        Model = getattr(model_mod, model) 
+
+        return [f.name for f in Model._meta.get_fields()]
+
+    def get_template(self, path, using='jinja2'):
+        return get_template(path, using=using)
 
     # def get_import_line(self, imp_module):
     #     '''

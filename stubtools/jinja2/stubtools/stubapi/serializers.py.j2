@@ -1,0 +1,11 @@
+from rest_framework import serializers
+from {{ app }}.models import {{ model }}
+
+###############
+# SERIALIZERS
+###############
+
+class {{ serializer_class }}(serializers.ModelSerializer):
+    class Meta:
+        model = {{ model }}
+        fields = ({% for field in model_fields %}'{{ field }}'{% if not loop.last %}, {% endif %}{% endfor %})

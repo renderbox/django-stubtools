@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-28 17:39:48
+# @Last Modified time: 2018-12-05 16:30:15
 #--------------------------------------------
 
 import os.path
@@ -36,6 +36,7 @@ class Command(FileAppCommand):
             for app_view in args:
                 app, view, trash = parse_app_input(app_view)
                 self.process(app, view)
+
         except KeyboardInterrupt:
             print("\nExiting...")
             return
@@ -56,7 +57,7 @@ class Command(FileAppCommand):
     def get_context(self, app, model, app_models=None, **kwargs):
 
         if model == None:       # If not model is provided, ask which one to work with
-            model = selection_list(app_models, "Pick a model to create a Admin interface for.", as_string=True)
+            model = selection_list(app_models, "Pick a model to create an Admin interface for.", as_string=True)
 
         model_admin = model + "Admin"
 
@@ -76,7 +77,6 @@ class Command(FileAppCommand):
 
 
     def process(self, app, model, **kwargs):
-        model_file = "%s/models.py" % app
         admin_file = "%s/admin.py" % app
 
         print("ADMIN FILE: %s" % admin_file)
@@ -84,10 +84,7 @@ class Command(FileAppCommand):
         app_models = []
 
         if not model:
-            model_file_parser = PythonFileParser(model_file)
-    
-            # Pass in a list of available models from models.py
-            app_models = [x['name'] for x in model_file_parser.structure['classes'] if 'models.Model' in x['inheritence_chain'] ]
+            app_models = self.get_app_models(app)
 
         self.render_ctx = self.get_context(app, model, app_models=app_models, **kwargs)
 
