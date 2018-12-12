@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-05 16:15:26
+# @Last Modified time: 2018-12-10 17:07:14
 #--------------------------------------------
 import re, os.path
 import ast
@@ -16,6 +16,7 @@ from django.conf import settings
 
 from stubtools.core.astparse import ast_parse_code
 from stubtools.core.file import PythonFileParser
+from stubtools.core.prompt import horizontal_rule
 
 import django
 
@@ -240,6 +241,13 @@ class FileAppCommand(AppCommand):
 
     def get_template(self, path, using='jinja2'):
         return get_template(path, using=using)
+
+    def echo_output(self, file_path, data):
+        print("\n")
+        print( horizontal_rule() )
+        print("%s RESULT:" % file_path)
+        print( horizontal_rule() )
+        print(data)
 
     # def get_import_line(self, imp_module):
     #     '''

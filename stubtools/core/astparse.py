@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-14 15:34:48
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-28 15:45:43
+# @Last Modified time: 2018-12-12 14:26:57
 # --------------------------------------------
 
 import ast
@@ -129,9 +129,14 @@ def ast_last_line_number(node, index= -1):
         return ast_last_line_number(node.body[index], index=index)
     else:
         if isinstance(node, ast.Assign) and isinstance(node.value, ast.List):
-            return ast_last_line_number(node.value.elts[-1])    # Get the last item in the list.  Trying to compensate for multiline assignments.
-        else:
-            return getattr(node, "lineno", None)
+            # Need to check to handle Meta classes...
+            if hasattr(node.value, 'elts') and len(node.value.elts) > 0:
+                return ast_last_line_number(node.value.elts[-1])    # Get the last item in the list.  Trying to compensate for multiline assignments.
+            elif hasattr(node.value, 'targets') and len(node.value.targets) > 0:
+                return ast_last_line_number(node.value.targets[-1])
+
+    return getattr(node, "lineno", None)    # Fall Through Result
+
     #     if hasattr(obj, "lineno"):
     #         return obj.lineno
     # return None     # Return None if there is no code present

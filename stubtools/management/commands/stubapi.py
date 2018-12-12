@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-12-05 14:50:04
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-12-05 16:28:51
+# @Last Modified time: 2018-12-10 17:52:17
 # --------------------------------------------
 from django.conf import settings
 from django.core.management.base import CommandError
@@ -42,7 +42,7 @@ class Command(FileAppCommand):
             pass
 
         app_models = self.get_app_models(app)
-        api_view_class_types = ['ListAPIView', 'DetailView']
+        api_view_class_types = ['ListAPIView', 'RetrieveAPIView']
 
         # Queries
 
@@ -60,8 +60,12 @@ class Command(FileAppCommand):
 
         model_fields = self.get_model_fields(app, model)
 
+        api_view_path = model.lower()
+        api_view_name = "%s-%s-api" % (app, model)
+
         ctx = {'app': app, 'model':model, 'api_view_class':api_view_class, 'api_view_class_type':api_view_class_type, 
-                'serializer_class':serializer_class, 'api_view_description':api_view_description, 'model_fields':model_fields}
+                'serializer_class':serializer_class, 'api_view_description':api_view_description, 
+                'model_fields':model_fields, 'api_view_path':api_view_path, 'api_view_name':api_view_name.lower()}
         
         return ctx
 
@@ -72,34 +76,32 @@ class Command(FileAppCommand):
 
         self.render_ctx = self.get_context(app, api, api_class, **kwargs)
 
+        # Slice the files...
+
         # self.pp.pprint(self.render_ctx)
+        self.write_files = False            # While Debugging
 
         api_serializers_template = self.get_template('stubtools/stubapi/serializers.py.j2')
         api_serializers_result = api_serializers_template.render(context=self.render_ctx)
 
-        # if self.debug:
-        print("\n")
-        print( horizontal_rule() )
-        print("api/serializers.py RESULT:")
-        print( horizontal_rule() )
-        print(api_serializers_result)
+        if self.write_files:
+            self.write_file(api_serializers_file, api_serializers_result)
+        else:
+            self.echo_output(api_serializers_file, api_serializers_result)
 
         api_views_template = self.get_template('stubtools/stubapi/views.py.j2')
         api_views_result = api_views_template.render(context=self.render_ctx)
 
-        # if self.debug:
-        print("\n")
-        print( horizontal_rule() )
-        print("api/views.py RESULT:")
-        print( horizontal_rule() )
-        print(api_views_result)
+        if self.write_files:
+            self.write_file(api_views_file, api_views_result)
+        else:
+            self.echo_output(api_views_file, api_views_result)
 
         api_urls_template = self.get_template('stubtools/stubapi/urls.py.j2')
         api_urls_result = api_urls_template.render(context=self.render_ctx)
 
-        # if self.debug:
-        print("\n")
-        print( horizontal_rule() )
-        print("api/urls.py RESULT:")
-        print( horizontal_rule() )
-        print(api_urls_result)
+        if self.write_files:
+            self.write_file(api_urls_file, api_urls_result)
+        else:
+            self.echo_output(api_urls_file, api_urls_result)
+

@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-26 17:47:41
+# @Last Modified time: 2018-12-12 11:04:12
 #--------------------------------------------
 
 import os.path
@@ -46,9 +46,13 @@ class Command(FileAppCommand):
         model_classes.extend([ "%s.%s" % (x.__module__, x.__name__) for x in get_all_subclasses(Model, ignore_modules=['django.contrib.contenttypes.models', 'django.contrib.admin.models', 'django.contrib.sessions', 'django.contrib.auth.base_user', 'django.contrib.auth.models', 'allauth']) ])
         model_classes = list(set(model_classes))
         model_classes.sort()
-
         model_class_settings = {}
-        model_key = selection_list(model_classes, as_string=True, title="Select a Model Class")
+
+        # Make a selection only if there is more than one option
+        if len(model_classes) > 1:
+            model_key = selection_list(model_classes, as_string=True, title="Select a Model Class")
+        else:
+            model_key = model_classes[0]
 
         if not model:   # todo: Move to settings file
             default = "MyModel"
@@ -69,6 +73,7 @@ class Command(FileAppCommand):
         render_ctx['create_model_admin'] = ask_yes_no_question("Create an Admin Entry?", default=True, required=True)
         render_ctx['create_model_form'] = ask_yes_no_question("Create a matching Model Form?", default=True, required=True)
         render_ctx['create_model_views'] = ask_yes_no_question("Create matching Model Views?", default=True, required=True)
+        # render_ctx['create_model_api'] = ask_yes_no_question("Create matching Model API?", default=True, required=True)
 
         if render_ctx['create_model_views']:
             render_ctx['create_model_detail'] = ask_yes_no_question("Create a Model Detail View?", default=True, required=True)
@@ -93,7 +98,7 @@ class Command(FileAppCommand):
             render_ctx['model_class_import'] = render_ctx['model_class']
 
         if not render_ctx['attributes']:
-            render_ctx['attributes'] = [{'field_name':'name', 'field_type':"models.CharField", 'field_kwargs':{ 'blank':False }}]
+            render_ctx['attributes'] = [{'field_name':'name', 'field_type':"models.CharField", 'field_kwargs':{ 'max_length':100, 'blank':False }}]
 
         return render_ctx
 
@@ -208,4 +213,11 @@ class Command(FileAppCommand):
             if self.render_ctx['create_model_list']:
                 vc.process(app, self.render_ctx['model_name'], "django.views.generic.list.ListView", model=self.render_ctx['model'], **view_kwargs)
 
+        if self.render_ctx['create_model_admin']:
 
+            from stubtools.management.commands.stubadmin import Command as AdminCommand
+            ac = AdminCommand()
+            ac.debug = self.debug
+            admin_kwargs = {}
+
+            ac.process(app, self.render_ctx['model'])

@@ -1,7 +1,5 @@
-from django.conf.urls import url
-
-from . import views
-
-urlpatterns = [
-    path('{{ api_view_path }}', views.{{ api_view_class }}.as_view(), name='{{ api_view_name }}'),
-]
+{{ header }}
+{{ import_statement }}
+{{ body }}
+    path('{{ api_view_path }}/', views.{{ api_view_class }}.as_view(), name='{{ api_view_name }}'),
+{{ footer }}

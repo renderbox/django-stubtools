@@ -2,7 +2,11 @@
 {{ import_statement }}
 {{ body }}
 {% if create_model %}{% if model_name %}class {{ model }}({{ model_class }}):{% endif %}
-{% for field in attributes %}    {{ field.field_name }} = {{ field.field_type }}(_("{{ field.field_name|title }}"){% if field.field_kwargs %}, {% for key, value in field.field_kwargs.items() %}{{ key }}={{ value }} {% endfor %}{% endif %}){% endfor %}
+{% for field in attributes %}    {{ field.field_name }} = {{ field.field_type }}(_("{{ field.field_name|title }}"){% if field.field_kwargs %}, {% for key, value in field.field_kwargs.items() %}{{ key }}={{ value }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}){% endfor %}
+
+    def __str__(self):
+        return self.name
+
 {% if create_model_detail and model_detail_url_name %}
     def get_absolute_url(self):
         return reverse('{{ model_detail_url_name }}'{% if not slug_name %}, args=[str(self.id)]{% else %}, kwargs={'{{ slug_name }}':self.slug}{% endif %}  )

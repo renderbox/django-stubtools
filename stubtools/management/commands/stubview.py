@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-11-27 11:38:27
+# @Last Modified time: 2018-12-12 12:36:56
 #--------------------------------------------
 
 import re, os.path
@@ -233,7 +233,7 @@ class Command(FileAppCommand):
         # else:
         #     self.render_ctx['view_import_statement'] = "from %(view_class_module)s import %(view_class)s" % self.render_ctx
 
-        self.render_ctx['view_import_statement'] = self.parser.create_import_string(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'])
+        self.render_ctx['view_import_statement'] = self.parser.create_import_statement(self.render_ctx['view_class'], path=self.render_ctx['view_class_module'])
         # self.render_ctx['import_statement'] = self.create_import_line(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'])
 
 
@@ -277,6 +277,11 @@ class Command(FileAppCommand):
         # ]
 
         # Slice and Dice!
+        if not os.path.isfile(self.url_file):
+            FILE = open(self.url_file, "w")
+            FILE.write("")
+            FILE.close()
+
         url_parser = PythonFileParser(self.url_file)
         data_lines = url_parser.data_lines
         line_count = url_parser.structure['linecount']

@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-08 11:30:11
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-28 17:33:01
+# @Last Modified time: 2018-12-12 12:37:01
 # --------------------------------------------
 
 import os
@@ -31,6 +31,7 @@ class PythonFileParser():
 
     structure = {}
     data_lines = []
+    write_files = True
 
     def __init__(self, file_path=None):
 
@@ -40,9 +41,12 @@ class PythonFileParser():
             self.load_file()
 
     def load_file(self):
-        FILE = open( self.file_path, "r")
-        self.data_lines = FILE.readlines()
-        FILE.close()
+        if os.path.isfile(self.file_path):
+            FILE = open( self.file_path, "r")
+            self.data_lines = FILE.readlines()
+            FILE.close()
+        else:
+            self.data_lines = []
 
         self.ast_parse_code()
         self.set_import_slice()
@@ -236,7 +240,7 @@ class PythonFileParser():
 
         return result
 
-    def create_import_string(self, module, path=None, sort=False):
+    def create_import_statement(self, module, path=None, sort=False):
         '''
         example:
         path = django.db

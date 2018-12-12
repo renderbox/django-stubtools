@@ -3,12 +3,12 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-05 16:30:15
+# @Last Modified time: 2018-12-12 12:37:02
 #--------------------------------------------
 
-import os.path
-import re
-import inspect
+# import os.path
+# import re
+# import inspect
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
@@ -120,7 +120,7 @@ class Command(FileAppCommand):
             self.render_ctx['body'] = self.parser.get_body()
             self.render_ctx['registration'] = ''
 
-        self.render_ctx['model_class_import_statement'] = self.parser.create_import_string(self.render_ctx['model'], path=self.render_ctx['model_class_module'])
+        self.render_ctx['model_class_import_statement'] = self.parser.create_import_statement(self.render_ctx['model'], path=self.render_ctx['model_class_module'])
 
         if admin_import_line == None:       # if it's not there, prepend the admin import line
             self.render_ctx['add_django_contrib_import_statement'] = True

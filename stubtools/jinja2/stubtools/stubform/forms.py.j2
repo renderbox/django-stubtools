@@ -1,0 +1,15 @@
+{{ header }}
+{{ import_statement }}
+{{ body }}
+{% if not body %}
+###############
+# MODEL FORMS
+###############
+{% endif %}
+{% if model_form %}class {{ model_form }}(ModelForm):
+
+    class Meta:
+        model = {{ model }}
+        fields = []
+{% endif %}
+{{ footer }}
