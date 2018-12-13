@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-14 15:34:48
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-12-12 14:26:57
+# @Last Modified time: 2018-12-12 15:29:43
 # --------------------------------------------
 
 import ast
@@ -84,10 +84,44 @@ def ast_parse_import(node):
 
 
 def ast_parse_class(node):
+    '''
+    todo: Append Meta info if present...
+    '''
     result = ast_parse_defaults(node)
     result['name'] = node.name
-    result['inheritence_chain'] = ast_class_inheritence_chain(node)
+    ichain = ast_class_inheritence_chain(node)
+
+    if ichain:
+        result['inheritence_chain'] = ichain
+
+    if hasattr(node, "body"):
+        for child in node.body:
+            if isinstance(child, ast.ClassDef):
+                cdata = ast_parse_class(child)
+
+                if cdata['name'] == "Meta":
+                    result['meta'] = cdata
+                else:
+                    if not 'nested_class' in result:
+                        result['nested_class'] = []
+                    result['nested_class'].append(cdata)
+            # if isinstance(child, ast.Assign):
+            #     if not 'attributes' in result:
+            #         result['attributes'] = []
+
+            #     if isinstance(child.value, ast.Name):
+            #         result['attributes'].append({'target':", ".join([x.id for x in child.targets]), 'value': child.value.id})
+            #     # if isinstance(child.value, ast.List):
+            #     #     value = [x.elts for x in child.value]
+            #     #     result['attributes'].append({'target':", ".join([x.id for x in child.targets]), 'value': value})
+
     return result
+
+
+# def ast_value_tree(node):
+#     '''Recursively Parse a Node Tree'''
+#     result = {}
+#     if isinstance(node, ast.ClassDef):
 
 
 def ast_parse_function(node):

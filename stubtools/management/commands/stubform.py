@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-12 12:36:59
+# @Last Modified time: 2018-12-12 14:37:38
 #--------------------------------------------
 
 # from django.core.management.base import CommandError
@@ -50,10 +50,13 @@ class Command(FileAppCommand):
 
         model_list = [model]
 
+        model_fields = [ x for x in self.get_model_fields(app, model) if x not in ['id', 'pk'] ]  # Remove fields that should be ignored by default
+        # Pop the ID field if persent
+
         result = { 'header':"", 'body':"", 'footer':"",'model':model, 
                     'model_form':model_form, 'form_import':"",
                     'create_model_form':True, 'import_statement':"",
-                    'model_class_module':".models"}
+                    'model_class_module':".models", 'model_fields':model_fields}
 
         # Update the import line to include any missing model classes
         model_list.extend(app_models)

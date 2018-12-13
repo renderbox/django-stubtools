@@ -10,6 +10,6 @@
 
     class Meta:
         model = {{ model }}
-        fields = []
+        fields = [{% for field in model_fields %}'{{ field }}'{% if not loop.last %}, {% endif %}{% endfor %}]
 {% endif %}
 {{ footer }}
