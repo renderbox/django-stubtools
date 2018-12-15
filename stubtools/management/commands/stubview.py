@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-12 12:36:56
+# @Last Modified time: 2018-12-14 18:23:22
 #--------------------------------------------
 
 import re, os.path
@@ -156,7 +156,8 @@ class Command(FileAppCommand):
 
         view_suffix = view_class_settings[view_setting_key].get("view_suffix", "View")     # Given the view type, there is a common convention for appending to the name of the "page's" View's Class
 
-        render_ctx['description'] = ask_question("Did you want to add a quick description?")
+        if not 'description' in render_ctx:
+            render_ctx['description'] = ask_question("Did you want to add a quick description?")
 
         # POP VIEW OFF THE NAME PARTS IF IT IS THERE
         if view.endswith(view_suffix):

@@ -3,12 +3,12 @@
 # # @Author: Grant Viklund
 # # @Date:   2015-10-27 13:59:25
 # # @Last Modified by:   Grant Viklund
-# # @Last Modified time: 2018-11-28 10:42:51
+# # @Last Modified time: 2018-12-14 18:11:18
 # #--------------------------------------------
 # from unittest import TestCase
 
-# from stubtools.tests.parse_test import *
-# from stubtools.tests.stubview import *
+from stubtools.tests.parse_test import *
+from stubtools.tests.stubview import *
 from stubtools.tests.file_test import *
 
 '''
