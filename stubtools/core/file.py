@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-08 11:30:11
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-12-14 17:32:55
+# @Last Modified time: 2018-12-14 17:42:47
 # --------------------------------------------
 
 import os
@@ -126,8 +126,8 @@ class PythonFileParser():
             ("import",),
             ("from", "import_1",) ]
         '''
-
-        # print("get_import_block")
+        if self.structure['first_import_line'] == None:     # If there is no import block, return None
+            return None
 
         result = self.data_by_line[self.structure['first_import_line']:self.structure['last_import_line'] + 1]
 

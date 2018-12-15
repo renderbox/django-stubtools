@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2015-10-27 13:59:25
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-14 17:07:16
+# @Last Modified time: 2018-12-14 17:54:07
 #--------------------------------------------
 import os
 import pprint
@@ -24,95 +24,124 @@ class PythonFileParserTestCase(TestCase):
         self.pp = pprint.PrettyPrinter(indent=4)
 
 
-    # def test_blank_file(self):
-    #     file_path = os.path.join(self.test_file_dir, 'blank.py')
-    #     parser = PythonFileParser( file_path )
-    #     print("------------")
-    #     print(" Blank File")
-    #     print("------------")
+    def test_blank_file_header(self):
+        file_path = os.path.join(self.test_file_dir, 'blank.py')
+        parser = PythonFileParser( file_path )
 
-    #     self.assertEqual( parser.structure['first_import_line'], None )
-    #     self.assertEqual( parser.structure['last_import_line'], None )
-    #     self.assertEqual( parser.structure['last_code_line'], None )
+        header = parser.new_get_header()
 
-    #     # Change Slice Point
-    #     parser.set_import_slice("django.db")
-    #     # self.pp.pprint(parser.structure)
+        self.assertEqual( header, "" )
 
-    #     self.assertEqual( parser.structure['header_end_index'], None )   # Last header index (6) + 1, for slicing
-    #     self.assertEqual( parser.structure['body_start_index'], None )
-    #     self.assertEqual( parser.structure['body_end_index'], None )
-    #     self.assertEqual( parser.structure['footer_start_index'], None )
+    def test_blank_file_body(self):
+        file_path = os.path.join(self.test_file_dir, 'blank.py')
+        parser = PythonFileParser( file_path )
 
-    #     self.assertEqual( parser.get_body(), '' )
+        body = parser.new_get_body()
 
-    # def test_empty_model_file(self):
-    #     file_path = os.path.join(self.test_file_dir, 'models_empty.py')
-    #     parser = PythonFileParser( file_path )
+        self.assertEqual( body, "" )
 
-    #     self.assertEqual( parser.structure['first_import_line'], 8 )
-    #     self.assertEqual( parser.structure['last_import_line'], 9 )
-    #     self.assertEqual( parser.structure['last_code_line'], None )
+    def test_blank_file_import_block(self):
+        file_path = os.path.join(self.test_file_dir, 'blank.py')
+        parser = PythonFileParser( file_path )
 
-    #     # Change Slice Point
-    #     parser.set_import_slice("django.db")
+        self.assertEqual( parser.structure['first_import_line'], None )
+        self.assertEqual( parser.structure['last_import_line'], None )
 
-    #     self.assertEqual( parser.structure['header_end_index'], 6 )
-    #     self.assertEqual( parser.structure['body_start_index'], 8 )
-    #     self.assertEqual( parser.structure['body_end_index'], 8 )
-    #     self.assertEqual( parser.structure['footer_start_index'], None )
+        import_block = parser.get_import_block()
 
-    #     header_text = parser.get_header()
-    #     header_text_lines = header_text.splitlines()
+        self.assertEqual( import_block, None )
 
-    #     body_text = parser.get_body()
-    #     body_text_lines = body_text.splitlines()
 
-    #     self.assertEqual( header_text_lines[-1], '# --------------------------------------------')
-    #     self.assertEqual( body_text_lines[0], 'from django.utils.translation import ugettext_lazy as _' )
+    def test_empty_file_header(self):
+        file_path = os.path.join(self.test_file_dir, 'models_empty.py')
+        parser = PythonFileParser( file_path )
 
-    # def test_single_model_file(self):
-    #     file_path = os.path.join(self.test_file_dir, 'models_single.py')
-    #     parser = PythonFileParser( file_path )
+        header_array = parser.new_get_header().splitlines()
 
-    #     self.assertEqual( parser.structure['first_import_line'], 8 )
-    #     self.assertEqual( parser.structure['last_import_line'], 9 )
-    #     self.assertEqual( parser.structure['last_code_line'], 13 )
+        self.assertEqual( header_array[-1], "# --------------------------------------------" )
 
-    #     # Change Slice Point
-    #     parser.set_import_slice("django.db")
+    def test_empty_file_body(self):
+        file_path = os.path.join(self.test_file_dir, 'models_empty.py')
+        parser = PythonFileParser( file_path )
 
-    #     self.assertEqual( parser.structure['header_end_index'], 6 )  # Last header index (6) + 1, for slicing
-    #     self.assertEqual( parser.structure['body_start_index'], 8 )
-    #     self.assertEqual( parser.structure['body_end_index'], 12 )
-    #     self.assertEqual( parser.structure['footer_start_index'], 13 )
+        body = parser.new_get_body()
 
-    #     body_text = parser.get_body()
-    #     body_text_lines = body_text.splitlines()
+        self.assertEqual( body, "" )
 
-    #     self.assertEqual( body_text_lines[0], "from django.utils.translation import ugettext_lazy as _" )
+    def test_empty_file_import_block(self):
+        file_path = os.path.join(self.test_file_dir, 'models_empty.py')
+        parser = PythonFileParser( file_path )
 
-    # def test_multiple_model_file(self):
-    #     file_path = os.path.join(self.test_file_dir, 'models_multiple.py')
-    #     parser = PythonFileParser( file_path )
+        self.assertEqual( parser.structure['first_import_line'], 8 )
+        self.assertEqual( parser.structure['last_import_line'], 9 )
 
-    #     self.assertEqual( parser.structure['first_import_line'], 8 )
-    #     self.assertEqual( parser.structure['last_import_line'], 9 )
-    #     self.assertEqual( parser.structure['last_code_line'], 21 )
+        import_array = parser.get_import_block().splitlines()
 
-    #     # Change Slice Point
-    #     parser.set_import_slice("django.db")
+        self.assertEqual( import_array[0], "from django.db import models" )
+        self.assertEqual( import_array[-1], "from django.utils.translation import ugettext_lazy as _" )
 
-    #     self.assertEqual( parser.structure['header_end_index'], 6 )  # Last header index (6) + 1, for slicing
-    #     self.assertEqual( parser.structure['body_start_index'], 8 )
-    #     self.assertEqual( parser.structure['body_end_index'], 20 )
-    #     self.assertEqual( parser.structure['footer_start_index'], 21 )
 
-    #     body_text = parser.get_body()
-    #     body_text_lines = body_text.splitlines()
+    def test_models_single_header(self):
+        file_path = os.path.join(self.test_file_dir, 'models_single.py')
+        parser = PythonFileParser( file_path )
 
-    #     self.assertEqual( body_text_lines[0], "from django.utils.translation import ugettext_lazy as _" )
-    #     self.assertEqual( body_text_lines[-1], '    name = models.CharField(_("Name"), max_length=300 )' )
+        header_array = parser.new_get_header().splitlines()
+
+        self.assertEqual( header_array[-1], "# --------------------------------------------" )
+
+    def test_models_single_body(self):
+        file_path = os.path.join(self.test_file_dir, 'models_single.py')
+        parser = PythonFileParser( file_path )
+
+        body_array = parser.new_get_body().splitlines()
+
+        self.assertEqual( body_array[0], "" )
+        self.assertEqual( body_array[-1], '    name = models.CharField(_("Name"), max_length=300 )' )
+
+    def test_models_single_import_block(self):
+        file_path = os.path.join(self.test_file_dir, 'models_single.py')
+        parser = PythonFileParser( file_path )
+
+        self.assertEqual( parser.structure['first_import_line'], 8 )
+        self.assertEqual( parser.structure['last_import_line'], 9 )
+
+        import_array = parser.get_import_block().splitlines()
+
+        self.assertEqual( import_array[0], "from django.db import models" )
+        self.assertEqual( import_array[-1], "from django.utils.translation import ugettext_lazy as _" )
+
+
+
+    def test_models_multiple_header(self):
+        file_path = os.path.join(self.test_file_dir, 'models_multiple.py')
+        parser = PythonFileParser( file_path )
+
+        header_array = parser.new_get_header().splitlines()
+
+        self.assertEqual( header_array[-1], "# --------------------------------------------" )
+
+    def test_models_multiple_body(self):
+        file_path = os.path.join(self.test_file_dir, 'models_multiple.py')
+        parser = PythonFileParser( file_path )
+
+        body_array = parser.new_get_body().splitlines()
+
+        self.assertEqual( body_array[0], "" )
+        self.assertEqual( body_array[-1], '    address = models.CharField(_("Name"), max_length=300 )' )
+
+    def test_models_multiple_import_block(self):
+        file_path = os.path.join(self.test_file_dir, 'models_multiple.py')
+        parser = PythonFileParser( file_path )
+
+        self.assertEqual( parser.structure['first_import_line'], 8 )
+        self.assertEqual( parser.structure['last_import_line'], 10 )
+
+        import_array = parser.get_import_block().splitlines()
+
+        self.assertEqual( import_array[0], "from django.db import models" )
+        self.assertEqual( import_array[-1], "from django.utils.translation import ugettext_lazy as _" )
+
+
 
     # def test_empty_admin_file(self):
     #     file_path = os.path.join(self.test_file_dir, 'admin_empty.py')
