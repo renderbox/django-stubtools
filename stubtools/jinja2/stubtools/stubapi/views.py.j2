@@ -1,14 +1,16 @@
-from rest_framework import generics
-
-from {{ app }}.models import {{ model }}
-from .serializers import {{ serializer_class }}
-
+{{ header }}
+{{ import_statements }}
+{{ body }}
+{% if not body %}
 ###############
 # APIs
 ###############
-
+{% endif %}
+{% if add_class %}
 class {{ api_view_class }}(generics.{{ api_view_class_type }}):
 {% if api_view_description %}    """{{ api_view_description }}"""
 
 {% endif %}    queryset = {{ model }}.objects.all()
     serializer_class = {{ serializer_class }}
+{% endif %}
+{{ footer }}

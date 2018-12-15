@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-10 17:07:14
+# @Last Modified time: 2018-12-14 17:31:54
 #--------------------------------------------
 import re, os.path
 import ast
@@ -176,6 +176,52 @@ class FileAppCommand(AppCommand):
     #     # Create the AST Tree and parse it
     #     tree = ast.parse(data)
     #     return ast_parse_code(tree)
+
+    def sliced_ctx(self, file_path, new_class, template=None, extra_ctx={}, modules=[]):
+        if not os.path.isfile(file_path):
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+            FILE = open(file_path, "w")
+            FILE.write("")
+            FILE.close()
+
+        parser = PythonFileParser(file_path)
+
+        ctx = {}
+        ctx.update(extra_ctx)
+        ctx['add_class'] = True
+
+        if new_class in parser.structure['class_list']:
+            print("** %s form already in '%s', skipping creation..." % (new_class, file_path))
+            ctx['add_class'] = False
+
+        # if module_path:
+        #     parser.set_import_slice(module_path)
+
+        ctx['header'] = parser.new_get_header()     # Everything before the first import line
+        ctx['body'] = parser.new_get_body()         # Everything between the last import line and the last code line
+        ctx['footer'] = parser.get_footer()         # Everything after the last code line
+        ctx['import_statements'] = parser.get_import_block(modules=modules)
+
+        if self.debug:
+            self.pp.pprint(parser.structure)
+            self.pp.pprint(ctx)
+
+        return ctx
+
+    def write_template(self, ctx, path, template):
+        renderer = self.get_template(template)
+        result = renderer.render(context=ctx)
+
+        if self.write_files:
+            self.write_file(path, result)
+        else:
+            self.echo_output(path, result)
+
+
+    def write(self, file_path, new_class, template=None, extra_ctx={}, modules=[]):
+        ctx = self.sliced_ctx(file_path, new_class, template=template, extra_ctx=extra_ctx, modules=modules)
+        self.write_template(ctx, file_path, template)
 
 
     def create_import_line(self, module, path=None, modules=[], comment=None, sort=False):

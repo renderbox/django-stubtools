@@ -1,11 +1,12 @@
-{{ header }}{{ import_statement }}
+{{ header }}
+{{ import_statements }}
 {{ body }}
 {% if not body %}
 ###############
 # SERIALIZERS
 ###############
 {% endif %}
-{% if add_class %}
+{%- if add_class -%}
 class {{ serializer_class }}(serializers.ModelSerializer):
     class Meta:
         model = {{ model }}

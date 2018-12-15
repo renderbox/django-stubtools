@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-12-05 14:50:04
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-12-12 16:49:55
+# @Last Modified time: 2018-12-14 17:32:21
 # --------------------------------------------
 import os
 import os.path
@@ -95,124 +95,50 @@ class Command(FileAppCommand):
         
         return ctx
 
-    def sliced_ctx(self, file_path, new_class, module, module_path=None, extra_ctx={}, required_modules=[]):
-        if not os.path.isfile(file_path):
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-            FILE = open(file_path, "w")
-            FILE.write("")
-            FILE.close()
-
-        parser = PythonFileParser(file_path)
-
-        ctx = {}
-        ctx.update(extra_ctx)
-        ctx['add_class'] = True
-
-        if new_class in parser.structure['class_list']:
-            print("** %s form already in '%s', skipping creation..." % (new_class, file_path))
-            ctx['add_class'] = False
-
-        if module_path:
-            parser.set_import_slice(module_path)
-
-        ctx['header'] = parser.get_header()
-        ctx['body'] = parser.get_body()
-        ctx['footer'] = parser.get_footer()
-        ctx['import_statement'] = parser.create_import_statement(module, path=module_path)
-
-        for mod in required_modules:
-            included = parser.get_import_line(mod[0])  # Does a check to see if the line is already included or not
-
-            if included == None:
-                if len(mod) == 1:
-                    ctx['import_statement'] = "import %s\n" % (mod[0]) + api_ctx['import_statement']
-                else:
-                    ctx['import_statement'] = "from %s import %s\n" % (mod[0], ", ".join(mod[1:])) + ctx['import_statement']
-
-        return ctx
-
     def process(self, app, api, api_class, **kwargs):
         api_dir = os.path.join(app, 'api')
         api_views_file = os.path.join(api_dir, 'views.py')
         api_urls_file = os.path.join(api_dir, 'urls.py')
-        api_serializers_file = os.path.join(api_dir, 'serializers.py')
+        serializers_file = os.path.join(api_dir, 'serializers.py')
 
         self.render_ctx = self.get_context(app, api, api_class, **kwargs)
 
         if not self.render_ctx:
+            # IF an empty dict comes back, it falied the queries for some reason (maybe it already exists in the file)
             return
 
         # Slice the files...
 
-        # self.pp.pprint(self.render_ctx)
-        # self.write_files = False            # While Debugging
-
-        # ####
-        # # Serializers
-        # if not os.path.isfile(api_serializers_file):
-
-        #     os.makedirs(api_dir, exist_ok=True)
-
-        #     FILE = open(api_serializers_file, "w")
-        #     FILE.write("")
-        #     FILE.close()
-
-        # api_parser = PythonFileParser(api_serializers_file)
-
-        # api_ctx = {}
-        # api_ctx.update(self.render_ctx)
-        # api_ctx['add_serializer'] = True
-
-        # api_parser.set_import_slice(api_ctx['model_class_module'])
-
-        # if api_ctx['serializer_class'] in api_parser.structure['class_list']:
-        #     print("** %s form already in '%s', skipping creation..." % (api_ctx['serializer_class'], api_serializers_file))
-        #     api_ctx['add_serializer'] = False
-            
-        # api_ctx['header'] = api_parser.get_header()
-        # api_ctx['body'] = api_parser.get_body()
-        # api_ctx['footer'] = api_parser.get_footer()
-        # api_ctx['import_statement'] = api_parser.create_import_statement(api_ctx['model'], path=api_ctx['model_class_module'])
-
-        # rest_import_line = api_parser.get_import_line("rest_framework")  # Does a check to see if the line is already included or not
-
-        # if rest_import_line == None:
-        #     api_ctx['import_statement'] = "from rest_framework import serializers\n" + api_ctx['import_statement']
-
-        api_ctx = self.sliced_ctx(api_serializers_file, self.render_ctx['serializer_class'], self.render_ctx['model'], 
-                                    module_path=self.render_ctx['model_class_module'], 
-                                    extra_ctx=self.render_ctx, 
-                                    required_modules=[ ("rest_framework", "serializers") ])
-
-        self.pp.pprint(api_ctx)
-
-        api_serializers_template = self.get_template('stubtools/stubapi/serializers.py.j2')
-        api_serializers_result = api_serializers_template.render(context=api_ctx)
-
-        if self.write_files:
-            self.write_file(api_serializers_file, api_serializers_result)
-        else:
-            self.echo_output(api_serializers_file, api_serializers_result)
-
         self.write_files = False            # While Debugging
 
         ####
+        # Serializers
+        self.write(serializers_file, self.render_ctx['serializer_class'], 
+                    template='stubtools/stubapi/serializers.py.j2',
+                    extra_ctx=self.render_ctx, 
+                    modules=[   ("rest_framework", "serializers"),
+                                (self.render_ctx['model_class_module'], self.render_ctx['model']) ])
+
+        ####
         # Views
+        self.write(api_views_file, self.render_ctx['api_view_class'],
+                    template='stubtools/stubapi/views.py.j2',
+                    extra_ctx=self.render_ctx, 
+                    modules=[   ("rest_framework", "generics"),
+                                ( self.render_ctx['model_class_module'], self.render_ctx['model'] ),
+                                ( ".serializers", self.render_ctx['serializer_class']),
+                            ])
 
-        api_views_template = self.get_template('stubtools/stubapi/views.py.j2')
-        api_views_result = api_views_template.render(context=self.render_ctx)
+        ####
+        # URLs
 
-        if self.write_files:
-            self.write_file(api_views_file, api_views_result)
-        else:
-            self.echo_output(api_views_file, api_views_result)
+        # self.write_files = False            # While Debugging
 
-        api_urls_template = self.get_template('stubtools/stubapi/urls.py.j2')
-        api_urls_result = api_urls_template.render(context=self.render_ctx)
+        # api_urls_template = self.get_template('stubtools/stubapi/urls.py.j2')
+        # api_urls_result = api_urls_template.render(context=self.render_ctx)
 
-        if self.write_files:
-            self.write_file(api_urls_file, api_urls_result)
-        else:
-            self.echo_output(api_urls_file, api_urls_result)
+        # if self.write_files:
+        #     self.write_file(api_urls_file, api_urls_result)
+        # else:
+        #     self.echo_output(api_urls_file, api_urls_result)
 
