@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2015-10-27 13:59:25
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-14 18:08:45
+# @Last Modified time: 2018-12-14 18:09:40
 #--------------------------------------------
 import os
 import pprint
@@ -11,7 +11,6 @@ import pprint
 from django.test import TestCase
 
 from stubtools.core.file import PythonFileParser
-# from stubtools.test.fixtures import PythonFileParser
 
 '''
 > python -m unittest tests/parse_test.py
