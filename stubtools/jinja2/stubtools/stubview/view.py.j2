@@ -1,5 +1,7 @@
-{{ view_header }}{{ view_import_statement }}{% if view_pre_view %}
-{{ view_pre_view }}{% else %}
+{{ header }}
+{{ import_statements }}
+{{ body }}
+{% if not body %}
 
 
 #--------------
@@ -23,4 +25,4 @@ class {{ resource_class }}({{ view_class }}):{% if description %}
     {% for key, value in attributes.items() %}{{ key }} = {{ value }}
     {% endfor %}
 {% endif %}
-{{ view_footer }}
+{{ footer }}

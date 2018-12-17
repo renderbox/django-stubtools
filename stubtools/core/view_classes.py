@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 14:09:40
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-11-20 12:28:22
+# @Last Modified time: 2018-12-16 21:03:42
 # --------------------------------------------
 
 VIEW_CLASS_DEFAULT_SETTINGS = {
@@ -56,7 +56,8 @@ VIEW_CLASS_SETTINGS = {
             {
                 "question": "Did you want to add a queryset?",
                 "key": "queryset",
-                "example": "Model.objects.all()",    # Examples are different from defaults in that they do not return a value
+                "default": "%(model)s.objects.all()",
+                'required': True
             },
         ],
         "class_name": "ListView",

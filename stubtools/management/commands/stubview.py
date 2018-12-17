@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-14 18:23:22
+# @Last Modified time: 2018-12-16 21:00:41
 #--------------------------------------------
 
 import re, os.path
@@ -199,68 +199,68 @@ class Command(FileAppCommand):
         # PARSE view.py
         #######################
 
-        # Slice and Dice!
-        print(self.view_file)
-        self.load_file(self.view_file)
-        # data_lines = self.load_file(self.view_file)
-        # line_count = len(data_lines)
-        # self.structure = self.parse_code("".join(data_lines))
+        # # Slice and Dice!
+        # print(self.view_file)
+        # self.load_file(self.view_file)
+        # # data_lines = self.load_file(self.view_file)
+        # # line_count = len(data_lines)
+        # # self.structure = self.parse_code("".join(data_lines))
 
-        print( horizontal_rule() )
-        print("FILE STRUCTURE:")
-        self.pp.pprint(self.parser.structure)
+        # print( horizontal_rule() )
+        # print("FILE STRUCTURE:")
+        # self.pp.pprint(self.parser.structure)
 
-        # check to see if the model is already in views.py
-        if self.render_ctx['resource_class'] in self.parser.structure['class_list']:
-            print("** %s view already in '%s', skipping creation" % (self.render_ctx['view'], self.view_file))
-            self.render_ctx['create_view'] = False
-            return
+        # # check to see if the model is already in views.py
+        # if self.render_ctx['resource_class'] in self.parser.structure['class_list']:
+        #     print("** %s view already in '%s', skipping creation" % (self.render_ctx['view'], self.view_file))
+        #     self.render_ctx['create_view'] = False
+        #     return
 
-        # Establish the Segments
-        # import_start_index = 0
-        # import_end_index = 0
-        # class_func_start = get_classes_and_functions_start(data_lines)
-        # class_func_end = line_count
+        # # Establish the Segments
+        # # import_start_index = 0
+        # # import_end_index = 0
+        # # class_func_start = get_classes_and_functions_start(data_lines)
+        # # class_func_end = line_count
 
-        # Segment Values
-        # pre_import = None
-        # pre_view = None
-        # post_view = None
+        # # Segment Values
+        # # pre_import = None
+        # # pre_view = None
+        # # post_view = None
 
-        # import_start_index, import_end_index = get_import_range("^from %(view_class_module)s import (.+)" % self.render_ctx, data_lines[:class_func_start])
+        # # import_start_index, import_end_index = get_import_range("^from %(view_class_module)s import (.+)" % self.render_ctx, data_lines[:class_func_start])
         
-        # if import_start_index > import_end_index:
-        #     self.render_ctx['view_import_statement'] = create_import_line(data_lines[import_start_index], self.render_ctx['view_class_module'], self.render_ctx['view_class'])
-        # else:
-        #     self.render_ctx['view_import_statement'] = "from %(view_class_module)s import %(view_class)s" % self.render_ctx
+        # # if import_start_index > import_end_index:
+        # #     self.render_ctx['view_import_statement'] = create_import_line(data_lines[import_start_index], self.render_ctx['view_class_module'], self.render_ctx['view_class'])
+        # # else:
+        # #     self.render_ctx['view_import_statement'] = "from %(view_class_module)s import %(view_class)s" % self.render_ctx
 
-        self.render_ctx['view_import_statement'] = self.parser.create_import_statement(self.render_ctx['view_class'], path=self.render_ctx['view_class_module'])
-        # self.render_ctx['import_statement'] = self.create_import_line(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'])
+        # self.render_ctx['view_import_statement'] = self.parser.create_import_statement(self.render_ctx['view_class'], path=self.render_ctx['view_class_module'])
+        # # self.render_ctx['import_statement'] = self.create_import_line(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'])
 
 
-        # 3) Find where the post_view starts
+        # # 3) Find where the post_view starts
 
-        # Search backwards until there is line that is not blank or a starting with a '#'.
-        # This is here to provide recognition for footers on files that may be there
-        # todo: Add support for """/''' blocks?
+        # # Search backwards until there is line that is not blank or a starting with a '#'.
+        # # This is here to provide recognition for footers on files that may be there
+        # # todo: Add support for """/''' blocks?
 
-        # for c, line in reversed(list(enumerate(data_lines))):
-        #     cleaned_line = line.strip()
+        # # for c, line in reversed(list(enumerate(data_lines))):
+        # #     cleaned_line = line.strip()
 
-        #     if cleaned_line:
-        #         if not cleaned_line.startswith("#"):
-        #             class_func_end = c + 1
-        #             break
+        # #     if cleaned_line:
+        # #         if not cleaned_line.startswith("#"):
+        # #             class_func_end = c + 1
+        # #             break
 
-        # 4) Build the sections
+        # # 4) Build the sections
 
-        self.render_ctx['view_header'] = self.parser.get_header()
-        self.render_ctx['view_pre_view'] = self.parser.get_footer()
-        self.render_ctx['view_footer'] = self.parser.get_body()
+        # self.render_ctx['view_header'] = self.parser.get_header()
+        # self.render_ctx['view_pre_view'] = self.parser.get_footer()
+        # self.render_ctx['view_footer'] = self.parser.get_body()
 
-        # self.render_ctx['header'] = self.parser.get_header()
-        # self.render_ctx['footer'] = self.parser.get_footer()
-        # self.render_ctx['body'] = self.parser.get_body()
+        # # self.render_ctx['header'] = self.parser.get_header()
+        # # self.render_ctx['footer'] = self.parser.get_footer()
+        # # self.render_ctx['body'] = self.parser.get_body()
 
         #######################
         # PARSE urls.py
@@ -343,58 +343,69 @@ class Command(FileAppCommand):
 
         # 5) Assemble the file
 
-        #######################
-        # RENDER THE TEMPLATES
-        #######################
+        # #######################
+        # # RENDER THE TEMPLATES
+        # #######################
 
-        # if self.debug:
-        print( horizontal_rule() )
-        print("RENDER CONTEXT:")
-        self.pp.pprint(self.render_ctx)
-        print( horizontal_rule() )
+        # # if self.debug:
+        # print( horizontal_rule() )
+        # print("RENDER CONTEXT:")
+        # self.pp.pprint(self.render_ctx)
+        # print( horizontal_rule() )
 
-        #######################
-        # Render Templates
+        # #######################
+        # # Render Templates
 
-        # load templates using Django's settings so users can create customized override templates.
-        view_template = get_template('stubtools/stubview/view.py.j2', using='jinja2')
-        url_template = get_template('stubtools/stubview/urls.py.j2', using='jinja2')
-        constructor_template = get_template('stubtools/stubview/' + self.render_ctx['constructor_template'], using='jinja2')
+        # # load templates using Django's settings so users can create customized override templates.
+        # view_template = get_template('stubtools/stubview/view.py.j2', using='jinja2')
+        # url_template = get_template('stubtools/stubview/urls.py.j2', using='jinja2')
+        # constructor_template = get_template('stubtools/stubview/' + self.render_ctx['constructor_template'], using='jinja2')
 
-        view_result = view_template.render(context=self.render_ctx)
-        urls_result = url_template.render(context=self.render_ctx)
-        template_results = constructor_template.render(context=self.render_ctx)
+        # view_result = view_template.render(context=self.render_ctx)
+        # urls_result = url_template.render(context=self.render_ctx)
+        # template_results = constructor_template.render(context=self.render_ctx)
+
+
+        self.write_files = False            # While Debugging
+
+        ####
+        # Serializers
+        self.write(self.view_file, self.render_ctx['view_class'], 
+                    template='stubtools/stubview/view.py.j2',
+                    extra_ctx=self.render_ctx, 
+                    modules=[ (self.render_ctx['view_class_module'], self.render_ctx['view_class']) ])
+
 
         #######################
         # Writing Output
 
-        if self.debug:
-            print("views.py RESULT:")
-            print(view_result)
+        # if self.debug:
+        # print("views.py RESULT:")
+        # print(view_result)
 
-            print( horizontal_rule() )
-            print("urls.py RESULT:")
-            print( horizontal_rule() )
-            print(urls_result)
+        # print( horizontal_rule() )
+        # print("urls.py RESULT:")
+        # print( horizontal_rule() )
+        # print(urls_result)
 
-            print( horizontal_rule() )
-            print("%s RESULT:" % template_file)
-            print( horizontal_rule() )
-            print(template_results)
+        # print( horizontal_rule() )
+        # print("%s RESULT:" % template_file)
+        # print( horizontal_rule() )
+        # print(template_results)
 
-            print( horizontal_rule() )
-            print("FILES:")
-            print("    VIEW FILE: %s" % self.view_file)
-            print("    URL FILE: %s" % self.url_file)
-            print("    TEMPLATE FILE: %s" % template_file)
+        print( horizontal_rule() )
+        print("FILES:")
+        print("    VIEW FILE: %s" % self.view_file)
+        print("    URL FILE: %s" % self.url_file)
+        print("    TEMPLATE FILE: %s" % template_file)
 
-        if self.write_files:
-            self.write_file(self.view_file, view_result)
-            self.write_file(self.url_file, urls_result)
+        # if self.write_files:
+        #     self.write_file(self.view_file, view_result)
+        #     self.write_file(self.url_file, urls_result)
 
-            # Only write if it does not exist:
-            if not os.path.exists(template_file):
-                self.write_file(template_file, template_results)
+        #     # Only write if it does not exist:
+        #     if not os.path.exists(template_file):
+        #         self.write_file(template_file, template_results)
 
 
 
