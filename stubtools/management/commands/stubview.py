@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-16 21:00:41
+# @Last Modified time: 2018-12-16 21:33:50
 #--------------------------------------------
 
 import re, os.path
@@ -184,11 +184,8 @@ class Command(FileAppCommand):
 
         self.render_ctx = self.get_context(app, view, view_class, **kwargs)
 
-        if not self.view_file:
-            self.view_file = os.path.join(app, "views.py")
-
-        if not self.url_file:
-            self.url_file = os.path.join(app, "urls.py")
+        view_file = os.path.join(app, "views.py")
+        url_file = os.path.join(app, "urls.py")
 
         if self.render_ctx['template_in_app']:
             template_file = os.path.join(app, "templates", *self.render_ctx['attributes']['template_name'][1:-1].split("/"))
@@ -199,68 +196,7 @@ class Command(FileAppCommand):
         # PARSE view.py
         #######################
 
-        # # Slice and Dice!
-        # print(self.view_file)
-        # self.load_file(self.view_file)
-        # # data_lines = self.load_file(self.view_file)
-        # # line_count = len(data_lines)
-        # # self.structure = self.parse_code("".join(data_lines))
 
-        # print( horizontal_rule() )
-        # print("FILE STRUCTURE:")
-        # self.pp.pprint(self.parser.structure)
-
-        # # check to see if the model is already in views.py
-        # if self.render_ctx['resource_class'] in self.parser.structure['class_list']:
-        #     print("** %s view already in '%s', skipping creation" % (self.render_ctx['view'], self.view_file))
-        #     self.render_ctx['create_view'] = False
-        #     return
-
-        # # Establish the Segments
-        # # import_start_index = 0
-        # # import_end_index = 0
-        # # class_func_start = get_classes_and_functions_start(data_lines)
-        # # class_func_end = line_count
-
-        # # Segment Values
-        # # pre_import = None
-        # # pre_view = None
-        # # post_view = None
-
-        # # import_start_index, import_end_index = get_import_range("^from %(view_class_module)s import (.+)" % self.render_ctx, data_lines[:class_func_start])
-        
-        # # if import_start_index > import_end_index:
-        # #     self.render_ctx['view_import_statement'] = create_import_line(data_lines[import_start_index], self.render_ctx['view_class_module'], self.render_ctx['view_class'])
-        # # else:
-        # #     self.render_ctx['view_import_statement'] = "from %(view_class_module)s import %(view_class)s" % self.render_ctx
-
-        # self.render_ctx['view_import_statement'] = self.parser.create_import_statement(self.render_ctx['view_class'], path=self.render_ctx['view_class_module'])
-        # # self.render_ctx['import_statement'] = self.create_import_line(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'])
-
-
-        # # 3) Find where the post_view starts
-
-        # # Search backwards until there is line that is not blank or a starting with a '#'.
-        # # This is here to provide recognition for footers on files that may be there
-        # # todo: Add support for """/''' blocks?
-
-        # # for c, line in reversed(list(enumerate(data_lines))):
-        # #     cleaned_line = line.strip()
-
-        # #     if cleaned_line:
-        # #         if not cleaned_line.startswith("#"):
-        # #             class_func_end = c + 1
-        # #             break
-
-        # # 4) Build the sections
-
-        # self.render_ctx['view_header'] = self.parser.get_header()
-        # self.render_ctx['view_pre_view'] = self.parser.get_footer()
-        # self.render_ctx['view_footer'] = self.parser.get_body()
-
-        # # self.render_ctx['header'] = self.parser.get_header()
-        # # self.render_ctx['footer'] = self.parser.get_footer()
-        # # self.render_ctx['body'] = self.parser.get_body()
 
         #######################
         # PARSE urls.py
@@ -277,67 +213,71 @@ class Command(FileAppCommand):
         #     url(r'^profile/$', views.ProfileView.as_view(), name='poop-profile'),
         # ]
 
-        # Slice and Dice!
-        if not os.path.isfile(self.url_file):
-            FILE = open(self.url_file, "w")
-            FILE.write("")
-            FILE.close()
+        # # Slice and Dice!
+        # if not os.path.isfile(url_file):
+        #     FILE = open(url_file, "w")
+        #     FILE.write("")
+        #     FILE.close()
 
-        url_parser = PythonFileParser(self.url_file)
-        data_lines = url_parser.data_lines
-        line_count = url_parser.structure['linecount']
+        # url_parser = PythonFileParser(url_file)
+        # data_lines = url_parser.data_lines
+        # line_count = url_parser.structure['linecount']
 
-        resource_pattern_start = get_pattern_line("(urlpatterns =)", data_lines, default=line_count)
-        resource_pattern_end = get_pattern_line("]", data_lines[resource_pattern_start:], default=0) + resource_pattern_start    # Look for the ']' after the urlpatterns
-        self.render_ctx['existing_patterns'] = [ p.strip() for p in get_all_pattern_lines(r"(url\(|path\(|re_path\()", data_lines) ]
+        # resource_pattern_start = get_pattern_line("(urlpatterns =)", data_lines, default=line_count)
+        # resource_pattern_end = get_pattern_line("]", data_lines[resource_pattern_start:], default=0) + resource_pattern_start    # Look for the ']' after the urlpatterns
+        # self.render_ctx['existing_patterns'] = [ p.strip() for p in get_all_pattern_lines(r"(url\(|path\(|re_path\()", data_lines) ]
 
-        import_block = data_lines[:resource_pattern_start]
+        # import_block = data_lines[:resource_pattern_start]
 
         if version_check("gte", "2.0.0"):
-            url_import_line = get_pattern_line("from django.urls import", import_block)
+            url_modules = [ ("django.urls", "path", "re_path"), ("views",) ]
+        else:
+            url_modules = [ ("django.conf.urls", "url"), ("views",) ]
 
-            if url_import_line == None:
-                # If there is no up-to-date import line, see if this is importing an old module, if so, see about updating the old resources
-                url_import_line = get_pattern_line("from django.conf.urls import url", import_block)
+        # url_modules.append( ("views") )
 
-                if url_import_line == None:
-                    url_import_line = len(import_block)
+        #     if url_import_line == None:
+        #         # If there is no up-to-date import line, see if this is importing an old module, if so, see about updating the old resources
+        #         url_import_line = get_pattern_line("from django.conf.urls import url", import_block)
 
-                    for c, line in enumerate(import_block):
-                        line.strip()
-                        print(c)
-                        print(line)                        
-                        if not line.startswith("#"):    # Skip passed any header comments at the start of a file
-                            url_import_line = c
-                            break
+        #         if url_import_line == None:
+        #             url_import_line = len(import_block)
+
+        #             for c, line in enumerate(import_block):
+        #                 line.strip()
+        #                 print(c)
+        #                 print(line)                        
+        #                 if not line.startswith("#"):    # Skip passed any header comments at the start of a file
+        #                     url_import_line = c
+        #                     break
             
-            self.render_ctx['url_import_statement'] = "from django.urls import path, re_path"    # todo: this could be better and more flexible.  Need to check to see ALL modules that are loaded
+        #     self.render_ctx['url_import_statement'] = "from django.urls import path, re_path"    # todo: this could be better and more flexible.  Need to check to see ALL modules that are loaded
 
-            # Update the Exisitng Patterns here
-            self.render_ctx['existing_patterns'] = [re.sub(r'url\(', r're_path(', item) for item in self.render_ctx['existing_patterns']]
-        else:
-            url_import_line = get_pattern_line("^from django.conf.urls import (.+)", import_block, default=0)
-            self.render_ctx['url_import_statement'] = "from django.conf.urls import url"
+        #     # Update the Exisitng Patterns here
+        #     self.render_ctx['existing_patterns'] = [re.sub(r'url\(', r're_path(', item) for item in self.render_ctx['existing_patterns']]
+        # else:
+        #     url_import_line = get_pattern_line("^from django.conf.urls import (.+)", import_block, default=0)
+        #     self.render_ctx['url_import_statement'] = "from django.conf.urls import url"
 
-        # If the view import line is missing, make sure it's there
-        if get_pattern_line("^from \. import(.+)", import_block) == None:
-            self.render_ctx['url_import_statement'] = self.render_ctx['url_import_statement'] + "\nfrom . import views"
+        # # If the view import line is missing, make sure it's there
+        # if get_pattern_line("^from \. import(.+)", import_block) == None:
+        #     self.render_ctx['url_import_statement'] = self.render_ctx['url_import_statement'] + "\nfrom . import views"
 
-        if url_import_line > 0:
-            self.render_ctx['pre_import'] = "".join(data_lines[:url_import_line])
-        else:
-            self.render_ctx['pre_import'] = ""
+        # if url_import_line > 0:
+        #     self.render_ctx['pre_import'] = "".join(data_lines[:url_import_line])
+        # else:
+        #     self.render_ctx['pre_import'] = ""
 
-        pre_url_lines = data_lines[url_import_line:resource_pattern_start]
+        # pre_url_lines = data_lines[url_import_line:resource_pattern_start]
 
-        # Check for old import line module import
-        if version_check("gte", "2.0.0"):
-            old_url_line = get_pattern_line("from django.conf.urls", pre_url_lines)
-            if old_url_line != None:
-                pre_url_lines.pop(old_url_line)
+        # # Check for old import line module import
+        # if version_check("gte", "2.0.0"):
+        #     old_url_line = get_pattern_line("from django.conf.urls", pre_url_lines)
+        #     if old_url_line != None:
+        #         pre_url_lines.pop(old_url_line)
 
-        self.render_ctx['pre_urls'] = "".join(pre_url_lines)
-        self.render_ctx['post_urls'] = "".join(data_lines[resource_pattern_end + 1:])
+        # self.render_ctx['pre_urls'] = "".join(pre_url_lines)
+        # self.render_ctx['post_urls'] = "".join(data_lines[resource_pattern_end + 1:])
 
         # Get the import lines
 
@@ -369,12 +309,16 @@ class Command(FileAppCommand):
         self.write_files = False            # While Debugging
 
         ####
-        # Serializers
-        self.write(self.view_file, self.render_ctx['view_class'], 
+        # Views
+        self.write(view_file, self.render_ctx['view_class'], 
                     template='stubtools/stubview/view.py.j2',
                     extra_ctx=self.render_ctx, 
                     modules=[ (self.render_ctx['view_class_module'], self.render_ctx['view_class']) ])
 
+        self.write(url_file, self.render_ctx['view_class'], 
+                    template='stubtools/stubview/urls.py.j2',
+                    extra_ctx=self.render_ctx, 
+                    modules=url_modules)
 
         #######################
         # Writing Output
@@ -395,13 +339,13 @@ class Command(FileAppCommand):
 
         print( horizontal_rule() )
         print("FILES:")
-        print("    VIEW FILE: %s" % self.view_file)
-        print("    URL FILE: %s" % self.url_file)
+        print("    VIEW FILE: %s" % view_file)
+        print("    URL FILE: %s" % url_file)
         print("    TEMPLATE FILE: %s" % template_file)
 
         # if self.write_files:
-        #     self.write_file(self.view_file, view_result)
-        #     self.write_file(self.url_file, urls_result)
+        #     self.write_file(view_file, view_result)
+        #     self.write_file(url_file, urls_result)
 
         #     # Only write if it does not exist:
         #     if not os.path.exists(template_file):

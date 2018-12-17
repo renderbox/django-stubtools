@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-08 11:30:11
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-12-14 17:42:47
+# @Last Modified time: 2018-12-16 21:35:47
 # --------------------------------------------
 
 import os
@@ -134,6 +134,8 @@ class PythonFileParser():
         # print("MODULES:")
         # print(modules)
 
+        print(self.structure)
+
         for module in modules:
 
             if len(module) > 1:
@@ -145,9 +147,19 @@ class PythonFileParser():
                 from_path = module[0]
                 import_mods = module[1:]
             else:   # assume it's just the import
+
+                print("Single Entry")
+                print(module)
+                print(type(module))
+
+                mod = module[0]
+
+                if mod.startswith("."):
+                    mod = mod[1:]   # Strip off the first "." since AST ignores it and it does not make it into the structure
+
                 from_check = None
                 from_path = None
-                import_mods = [ module[0][0] ]
+                import_mods = [ module[0] ]
 
             # print("from_check: %s" % from_check)
             # print("from_path: %s" % from_path)
@@ -157,8 +169,6 @@ class PythonFileParser():
                 append = True
 
                 for imp in self.structure['imports']:
-
-                    # print(imp)
 
                     if from_check == imp['from']:
                         append = False      # No longer try to append the line, look to update it
