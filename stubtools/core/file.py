@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-08 11:30:11
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-12-16 21:35:47
+# @Last Modified time: 2018-12-17 16:38:57
 # --------------------------------------------
 
 import os
@@ -83,6 +83,8 @@ class PythonFileParser():
 
         for node in tree.body:
             if isinstance(node, ast.ImportFrom):
+                self.structure['imports'].append( self.ast_parse_import_from(node) )
+            if isinstance(node, ast.Import):
                 self.structure['imports'].append( self.ast_parse_import(node) )
             if isinstance(node, ast.FunctionDef):
                 self.structure['functions'].append( self.ast_parse_function(node) )
@@ -110,7 +112,7 @@ class PythonFileParser():
 
         self.structure['first_code_line'], self.structure['last_code_line'] = self.ast_first_and_last_line(code)
 
-        self.structure['from_list'] = [ f['from'] for f in self.structure['imports'] ]      # Used to see if a line is already imported
+        self.structure['from_list'] = [ f['from'] for f in self.structure['imports'] if 'from' in f ]      # Used to see if a line is already imported
         self.structure['function_list'] = [ f['name'] for f in self.structure['functions'] ]      # Used to see if a line is already imported
         self.structure['class_list'] = [ f['name'] for f in self.structure['classes'] ]      # Used to see if a line is already imported
 
@@ -148,9 +150,9 @@ class PythonFileParser():
                 import_mods = module[1:]
             else:   # assume it's just the import
 
-                print("Single Entry")
-                print(module)
-                print(type(module))
+                # print("Single Entry")
+                # print(module)
+                # print(type(module))
 
                 mod = module[0]
 
@@ -170,7 +172,7 @@ class PythonFileParser():
 
                 for imp in self.structure['imports']:
 
-                    if from_check == imp['from']:
+                    if from_check == imp.get('from', None):
                         append = False      # No longer try to append the line, look to update it
 
                         # Check the imports to see if it's already included
@@ -319,9 +321,14 @@ class PythonFileParser():
 
         return first, last
 
-    def ast_parse_import(self, node):
+    def ast_parse_import_from(self, node):
         result = ast_parse_defaults(node)
         result['from'] = node.module
+        result['import'] = [x.name for x in node.names]
+        return result
+
+    def ast_parse_import(self, node):
+        result = ast_parse_defaults(node)
         result['import'] = [x.name for x in node.names]
         return result
 

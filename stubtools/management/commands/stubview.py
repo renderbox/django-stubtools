@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-16 21:33:50
+# @Last Modified time: 2018-12-17 13:39:49
 #--------------------------------------------
 
 import re, os.path
@@ -318,7 +318,8 @@ class Command(FileAppCommand):
         self.write(url_file, self.render_ctx['view_class'], 
                     template='stubtools/stubview/urls.py.j2',
                     extra_ctx=self.render_ctx, 
-                    modules=url_modules)
+                    modules=url_modules,
+                    django_url=True)
 
         #######################
         # Writing Output
