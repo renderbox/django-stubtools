@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-18 10:29:17
+# @Last Modified time: 2018-12-18 11:00:39
 #--------------------------------------------
 
 import re, os.path
@@ -189,170 +189,51 @@ class Command(FileAppCommand):
         view_file = os.path.join(app, "views.py")
         url_file = os.path.join(app, "urls.py")
 
+        view_template_file = os.path.join('stubtools', 'stubview', "views.py.j2")
+        url_template_file = os.path.join('stubtools', 'stubview', "urls.py.j2")
+
         if self.render_ctx['template_in_app']:
             template_file = os.path.join(app, "templates", *self.render_ctx['attributes']['template_name'][1:-1].split("/"))
         else:
             template_file = os.path.join("templates", *self.render_ctx['attributes']['template_name'][1:-1].split("/"))     # todo: get the template folder name from the settings
-
-        #######################
-        # PARSE view.py
-        #######################
-
-
-
-        #######################
-        # PARSE urls.py
-        #######################
-
-        # In Django 2.x, the resource pattern changed from 'url' to 'path'
-
-        # from django.conf.urls import url          # < 2.0
-        # from django.urls import path, re_path     # 2.0+
-
-        # from . import views
-
-        # urlpatterns = [
-        #     url(r'^profile/$', views.ProfileView.as_view(), name='poop-profile'),
-        # ]
-
-        # # Slice and Dice!
-        # if not os.path.isfile(url_file):
-        #     FILE = open(url_file, "w")
-        #     FILE.write("")
-        #     FILE.close()
-
-        # url_parser = PythonFileParser(url_file)
-        # data_lines = url_parser.data_lines
-        # line_count = url_parser.structure['linecount']
-
-        # resource_pattern_start = get_pattern_line("(urlpatterns =)", data_lines, default=line_count)
-        # resource_pattern_end = get_pattern_line("]", data_lines[resource_pattern_start:], default=0) + resource_pattern_start    # Look for the ']' after the urlpatterns
-        # self.render_ctx['existing_patterns'] = [ p.strip() for p in get_all_pattern_lines(r"(url\(|path\(|re_path\()", data_lines) ]
-
-        # import_block = data_lines[:resource_pattern_start]
 
         if version_check("gte", "2.0.0"):
             url_modules = [ ("django.urls", "path", "re_path"), ("views",) ]
         else:
             url_modules = [ ("django.conf.urls", "url"), ("views",) ]
 
-        # url_modules.append( ("views") )
-
-        #     if url_import_line == None:
-        #         # If there is no up-to-date import line, see if this is importing an old module, if so, see about updating the old resources
-        #         url_import_line = get_pattern_line("from django.conf.urls import url", import_block)
-
-        #         if url_import_line == None:
-        #             url_import_line = len(import_block)
-
-        #             for c, line in enumerate(import_block):
-        #                 line.strip()
-        #                 print(c)
-        #                 print(line)                        
-        #                 if not line.startswith("#"):    # Skip passed any header comments at the start of a file
-        #                     url_import_line = c
-        #                     break
-            
-        #     self.render_ctx['url_import_statement'] = "from django.urls import path, re_path"    # todo: this could be better and more flexible.  Need to check to see ALL modules that are loaded
-
-        #     # Update the Exisitng Patterns here
-        #     self.render_ctx['existing_patterns'] = [re.sub(r'url\(', r're_path(', item) for item in self.render_ctx['existing_patterns']]
-        # else:
-        #     url_import_line = get_pattern_line("^from django.conf.urls import (.+)", import_block, default=0)
-        #     self.render_ctx['url_import_statement'] = "from django.conf.urls import url"
-
-        # # If the view import line is missing, make sure it's there
-        # if get_pattern_line("^from \. import(.+)", import_block) == None:
-        #     self.render_ctx['url_import_statement'] = self.render_ctx['url_import_statement'] + "\nfrom . import views"
-
-        # if url_import_line > 0:
-        #     self.render_ctx['pre_import'] = "".join(data_lines[:url_import_line])
-        # else:
-        #     self.render_ctx['pre_import'] = ""
-
-        # pre_url_lines = data_lines[url_import_line:resource_pattern_start]
-
-        # # Check for old import line module import
-        # if version_check("gte", "2.0.0"):
-        #     old_url_line = get_pattern_line("from django.conf.urls", pre_url_lines)
-        #     if old_url_line != None:
-        #         pre_url_lines.pop(old_url_line)
-
-        # self.render_ctx['pre_urls'] = "".join(pre_url_lines)
-        # self.render_ctx['post_urls'] = "".join(data_lines[resource_pattern_end + 1:])
-
-        # Get the import lines
-
-        # 5) Assemble the file
-
         # #######################
         # # RENDER THE TEMPLATES
         # #######################
-
-        # # if self.debug:
-        # print( horizontal_rule() )
-        # print("RENDER CONTEXT:")
-        # self.pp.pprint(self.render_ctx)
-        # print( horizontal_rule() )
-
-        # #######################
-        # # Render Templates
-
-        # # load templates using Django's settings so users can create customized override templates.
-        # view_template = get_template('stubtools/stubview/view.py.j2', using='jinja2')
-        # url_template = get_template('stubtools/stubview/urls.py.j2', using='jinja2')
-        # constructor_template = get_template('stubtools/stubview/' + self.render_ctx['constructor_template'], using='jinja2')
-
-        # view_result = view_template.render(context=self.render_ctx)
-        # urls_result = url_template.render(context=self.render_ctx)
-        # template_results = constructor_template.render(context=self.render_ctx)
-
 
         self.write_files = False            # While Debugging
 
         ####
         # Views
         self.write(view_file, self.render_ctx['view_class'], 
-                    template='stubtools/stubview/view.py.j2',
+                    template=view_template_file,
                     extra_ctx=self.render_ctx, 
                     modules=[ (self.render_ctx['view_class_module'], self.render_ctx['view_class']) ])
 
         self.write(url_file, self.render_ctx['view_class'], 
-                    template='stubtools/stubview/urls.py.j2',
+                    template=url_template_file,
                     extra_ctx=self.render_ctx, 
                     modules=url_modules,
                     filters=[url_ctx_flter])
 
+        if not os.path.exists(template_file):
+            constructor_template = os.path.join('stubtools', 'stubview', self.render_ctx['constructor_template'])
+
+            self.write(template_file, self.render_ctx['view_class'], 
+                        template=constructor_template,
+                        extra_ctx=self.render_ctx)
+
         #######################
         # Writing Output
-
-        # if self.debug:
-        # print("views.py RESULT:")
-        # print(view_result)
-
-        # print( horizontal_rule() )
-        # print("urls.py RESULT:")
-        # print( horizontal_rule() )
-        # print(urls_result)
-
-        # print( horizontal_rule() )
-        # print("%s RESULT:" % template_file)
-        # print( horizontal_rule() )
-        # print(template_results)
 
         print( horizontal_rule() )
         print("FILES:")
         print("    VIEW FILE: %s" % view_file)
         print("    URL FILE: %s" % url_file)
         print("    TEMPLATE FILE: %s" % template_file)
-
-        # if self.write_files:
-        #     self.write_file(view_file, view_result)
-        #     self.write_file(url_file, urls_result)
-
-        #     # Only write if it does not exist:
-        #     if not os.path.exists(template_file):
-        #         self.write_file(template_file, template_results)
-
-
 
