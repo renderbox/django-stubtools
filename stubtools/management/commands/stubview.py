@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-17 13:39:49
+# @Last Modified time: 2018-12-18 10:29:17
 #--------------------------------------------
 
 import re, os.path
@@ -19,6 +19,8 @@ from stubtools.core.prompt import ask_question, ask_yes_no_question, selection_l
 from stubtools.core.parse import IMPORT_REGEX, get_classes_and_functions_start, get_pattern_line, get_all_pattern_lines, get_classes_and_functions, get_import_range
 from stubtools.core.view_classes import VIEW_CLASS_DEFAULT_SETTINGS, VIEW_CLASS_SETTINGS, STUBTOOLS_IGNORE_MODULES
 from stubtools.core.file import PythonFileParser
+from stubtools.core.filters import url_ctx_flter
+
 
 class Command(FileAppCommand):
     args = '<app.view.view_class>'
@@ -319,7 +321,7 @@ class Command(FileAppCommand):
                     template='stubtools/stubview/urls.py.j2',
                     extra_ctx=self.render_ctx, 
                     modules=url_modules,
-                    django_url=True)
+                    filters=[url_ctx_flter])
 
         #######################
         # Writing Output

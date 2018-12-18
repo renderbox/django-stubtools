@@ -1,8 +1,8 @@
 {{ header }}
 {{ import_statements }}
 {{ body }}
-{% if not body %}
+{%- if not body -%}
 urlpatterns = [{% endif %}
     {{ resource_method }}('{{ resource_pattern }}', views.{{ view }}{% if class_based_view %}.as_view(){% endif %}, name='{{ resource_name }}'),
-{% if not body %}]{% endif %}
+{%- if not body -%}]{% endif %}
 {{ footer }}

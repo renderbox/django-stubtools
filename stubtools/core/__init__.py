@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-17 16:46:58
+# @Last Modified time: 2018-12-18 10:27:24
 #--------------------------------------------
 import re, os.path
 import ast
@@ -177,7 +177,7 @@ class FileAppCommand(AppCommand):
     #     tree = ast.parse(data)
     #     return ast_parse_code(tree)
 
-    def sliced_ctx(self, file_path, new_class, template=None, extra_ctx={}, modules=[], django_url=False, django_admin=False):
+    def sliced_ctx(self, file_path, new_class, template=None, extra_ctx={}, modules=[], filters=[]):
         if not os.path.isfile(file_path):
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
@@ -200,51 +200,15 @@ class FileAppCommand(AppCommand):
         ctx['footer'] = parser.get_footer()         # Everything after the last code line
         ctx['import_statements'] = parser.get_import_block(modules=modules)
 
-        if django_url:    # Do special URL Parsing Here
-            ctx = self.url_ctx(ctx, parser)
+        for ctx_filter in filters:
+            ctx = ctx_filter(ctx, parser)
+
+        # if django_url:    # Do special URL Parsing Here
+        #     ctx = self.url_ctx(ctx, parser)
 
         if self.debug:
             self.pp.pprint(parser.structure)
             self.pp.pprint(ctx)
-
-        return ctx
-
-    def url_ctx(self, ctx, parser):
-        '''
-        Take a context and further process it for Dajngo App URL files...
-        '''
-        # print("sliced_url_ctx")
-
-        first_line = None
-        last_line = None
-
-        for assignment in parser.structure.get('assignments', []):
-            if assignment['name'] == "urlpatterns":
-                first_line = assignment['first_line']
-                last_line = assignment['last_line']
-
-        if first_line:
-            print("MODIFY BODY")
-            print("Append After Line: %d" % last_line)
-            # Check to see where the close list character is... "]"
-
-        else:
-            # If there is no "urlpatterns", move everything from the body to the header and set the body to a value None (So the template knows there is no body string)
-            ctx['header'] += ctx['body']
-            ctx['body'] = None
-
-
-        # Check if the two assignment lines are the same value.  That can be an unassigned value or a single line assignment
-
-        # If the last line is greater than the first line, look for the closing bracket.
-
-        print( horizontal_rule() )
-        # print("URL CTX:")
-        # self.pp.pprint(ctx)
-        # print( horizontal_rule() )
-        print("URL STRUCTURE:")
-        self.pp.pprint(parser.structure)
-        print( horizontal_rule() )
 
         return ctx
 
@@ -264,8 +228,8 @@ class FileAppCommand(AppCommand):
         else:
             self.echo_output(path, result)
 
-    def write(self, file_path, new_class, template=None, extra_ctx={}, modules=[], django_url=False, django_admin=False):
-        ctx = self.sliced_ctx(file_path, new_class, template=template, extra_ctx=extra_ctx, modules=modules, django_url=django_url, django_admin=django_admin)
+    def write(self, file_path, new_class, template=None, extra_ctx={}, modules=[], filters=[]):
+        ctx = self.sliced_ctx(file_path, new_class, template=template, extra_ctx=extra_ctx, modules=modules, filters=filters)
         self.write_template(ctx, file_path, template)
 
     def create_import_line(self, module, path=None, modules=[], comment=None, sort=False):
