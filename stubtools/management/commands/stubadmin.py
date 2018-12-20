@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-19 16:54:10
+# @Last Modified time: 2018-12-19 16:58:11
 #--------------------------------------------
 
 # import os.path
@@ -119,7 +119,7 @@ class Command(FileAppCommand):
                     extra_ctx=self.render_ctx, 
                     modules=[ ('django.contrib', 'admin'),
                               (self.render_ctx['model_class_module'], self.render_ctx['model']) ],
-                    filters=[admin_ctx_filter])
+                    filters=[ admin_ctx_filter ])
 
         # if self.write_files:
         #     self.write_file(admin_file, admin_result)

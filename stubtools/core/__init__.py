@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-19 16:33:08
+# @Last Modified time: 2018-12-19 17:01:48
 #--------------------------------------------
 import re, os.path
 import ast
@@ -210,13 +210,6 @@ class FileAppCommand(AppCommand):
         #     self.pp.pprint(parser.structure)
         #     self.pp.pprint(ctx)
 
-        return ctx
-
-    def sliced_admin_ctx(self, ctx):
-        '''
-        Take a context and further process it for Dajngo App Admin files...
-        '''
-        print("sliced_admin_ctx")
         return ctx
 
     def write_template(self, ctx, path, template):

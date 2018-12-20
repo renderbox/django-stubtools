@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-08 11:30:11
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-12-17 16:38:57
+# @Last Modified time: 2018-12-19 17:02:35
 # --------------------------------------------
 
 import os
@@ -136,7 +136,7 @@ class PythonFileParser():
         # print("MODULES:")
         # print(modules)
 
-        print(self.structure)
+        # print(self.structure)
 
         for module in modules:
 
@@ -389,7 +389,7 @@ class PythonFileParser():
         if from_check in self.structure['from_list']:             # if the module passed in is in the Python File, use that
             i = self.structure['from_list'].index(from_check)
             mod_list.extend( self.structure['imports'][i]['import'] )
-            print("EXTENDING THE MODULE LIST")
+            # print("EXTENDING THE MODULE LIST")
 
             # Look for comment and append if needed
             parts = self.data_lines[ self.structure['imports'][i]['node'].lineno - 1 ].split("#")    # Split off any comments
@@ -399,8 +399,8 @@ class PythonFileParser():
         if module not in mod_list:
             mod_list.append(module)
 
-        print("MOD LIST")
-        print(mod_list)
+        # print("MOD LIST")
+        # print(mod_list)
 
         if sort:
             mod_list.sort()             # Sort the modules
