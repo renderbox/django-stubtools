@@ -6,13 +6,15 @@
 # MODEL ADMINS
 ###############
 {% endif %}
-{% if create_model_admin %}class {{ model_admin }}(admin.ModelAdmin):
+{%- if not model_admin_exists -%}class {{ model_admin }}(admin.ModelAdmin):
     pass
-{% endif %}
-{% if not registration %}
+{%- endif -%}
+{%- if not registration_block -%}
 ###############
 # REGISTRATION
 ###############
 
-{% endif %}{{ registration }}{% if register_model_admin %}admin.site.register({{ model }}, {{ model_admin }}){% endif %}
+{%- endif -%}
+{{ registration_block }}
+{% if not model_admin_exists %}admin.site.register({{ model }}, {{ model_admin }}){% endif %}
 {{ footer }}

@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-12-18 10:27:42
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-12-19 16:49:03
+# @Last Modified time: 2018-12-19 17:23:46
 # --------------------------------------------
 import pprint
 
@@ -52,17 +52,24 @@ def url_ctx_flter(ctx, parser):
 
 def admin_ctx_filter(ctx, parser):
 
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(parser.structure)
+
     #########
     # FILE PARTS
 
-    # self.parser.set_import_slice(".models")
+    # if ctx['model_admin'] in parser.structure['class_list']:
+    #     ctx['model_admin_exists'] = True
+    ctx['model_admin_exists'] = ctx['model_admin'] in parser.structure['class_list']
 
-    # if self.parser.structure['expressions']:
-    #     self.render_ctx['body'] = self.parser.get_text_slice(self.parser.structure['body_start_index'], self.parser.structure['last_class_line'] - 1)
-    #     self.render_ctx['registration'] = self.parser.get_text_slice(self.parser.structure['last_class_line'], self.parser.structure['body_end_index'])
-    # else:
-    #     self.render_ctx['body'] = self.parser.get_body()
-    #     self.render_ctx['registration'] = ''
+    if parser.structure['expressions']:
+        print("BODY RANGE: %d-%d" % (parser.structure['last_import_line'] + 1, parser.structure['last_class_line']) )
+        print("REGISTRATION RANGE: %d-%d" % (parser.structure['last_class_line'] + 1, parser.structure['body_end_index'] + 1) )
+        ctx['body'] = parser.get_text_slice_by_line(parser.structure['last_import_line'] + 1, parser.structure['last_class_line'])
+        ctx['registration_block'] = parser.get_text_slice_by_line(parser.structure['last_class_line'] + 1, parser.structure['body_end_index'] + 1)
+    else:
+        ctx['body'] = parser.new_get_body()
+        ctx['registration_block'] = ''
 
     # if self.render_ctx['model_admin'] in self.parser.structure['class_list']:
     #     print("** %s admin already in '%s', skipping creation..." % (self.render_ctx['model_admin'], admin_file))

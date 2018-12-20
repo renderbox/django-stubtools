@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-19 17:01:48
+# @Last Modified time: 2018-12-19 17:06:01
 #--------------------------------------------
 import re, os.path
 import ast
@@ -224,7 +224,6 @@ class FileAppCommand(AppCommand):
             print("%s RESULT:" % path)
             print( horizontal_rule() )
             print(result)
-
 
     def write(self, file_path, new_class, template=None, extra_ctx={}, modules=[], filters=[]):
         ctx = self.sliced_ctx(file_path, new_class, template=template, extra_ctx=extra_ctx, modules=modules, filters=filters)
