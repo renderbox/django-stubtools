@@ -3,14 +3,22 @@
 {{ body }}
 {% if create_model %}
 
-class {{ model }}({{ model_class }}):
+class {{ model }}({{ model_class }}):{% if description %}
+    '''
+    {{ description }}
+    '''{% endif %}
 {% for field in attributes %}    {{ field.field_name }} = {{ field.field_type }}(_("{{ field.field_name|title }}"){% if field.field_kwargs %}, {% for key, value in field.field_kwargs.items() %}{{ key }}={{ value }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}){% endfor %}
 
     def __str__(self):
         return self.name
 
+{% if model_detail_url_name -%}
     def get_absolute_url(self):
         return reverse('{{ model_detail_url_name }}'{% if not slug_name %}, args=[str(self.id)]{% else %}, kwargs={'{{ slug_name }}':self.slug}{% endif %}  )
+{% else %}
+    # def get_absolute_url(self):
+    #     return reverse('detail-page-name'{% if not slug_name %}, args=[str(self.id)]{% else %}, kwargs={'{{ slug_name }}':self.slug}{% endif %}  )
+{% endif %}
 
 {% endif %}
 {{ footer }}
