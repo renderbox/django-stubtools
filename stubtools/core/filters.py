@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-12-18 10:27:42
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-12-18 10:40:31
+# @Last Modified time: 2018-12-19 16:49:03
 # --------------------------------------------
 import pprint
 
@@ -46,5 +46,27 @@ def url_ctx_flter(ctx, parser):
     # print("URL STRUCTURE:")
     # pp.pprint(parser.structure)
     # print( horizontal_rule() )
+
+    return ctx
+
+
+def admin_ctx_filter(ctx, parser):
+
+    #########
+    # FILE PARTS
+
+    # self.parser.set_import_slice(".models")
+
+    # if self.parser.structure['expressions']:
+    #     self.render_ctx['body'] = self.parser.get_text_slice(self.parser.structure['body_start_index'], self.parser.structure['last_class_line'] - 1)
+    #     self.render_ctx['registration'] = self.parser.get_text_slice(self.parser.structure['last_class_line'], self.parser.structure['body_end_index'])
+    # else:
+    #     self.render_ctx['body'] = self.parser.get_body()
+    #     self.render_ctx['registration'] = ''
+
+    # if self.render_ctx['model_admin'] in self.parser.structure['class_list']:
+    #     print("** %s admin already in '%s', skipping creation..." % (self.render_ctx['model_admin'], admin_file))
+    #     self.render_ctx['create_model_admin'] = False
+    #     self.render_ctx['register_model_admin'] = False
 
     return ctx

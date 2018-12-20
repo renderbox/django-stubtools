@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-18 10:27:24
+# @Last Modified time: 2018-12-19 16:33:08
 #--------------------------------------------
 import re, os.path
 import ast
@@ -206,9 +206,9 @@ class FileAppCommand(AppCommand):
         # if django_url:    # Do special URL Parsing Here
         #     ctx = self.url_ctx(ctx, parser)
 
-        if self.debug:
-            self.pp.pprint(parser.structure)
-            self.pp.pprint(ctx)
+        # if self.debug:
+        #     self.pp.pprint(parser.structure)
+        #     self.pp.pprint(ctx)
 
         return ctx
 
@@ -226,7 +226,12 @@ class FileAppCommand(AppCommand):
         if self.write_files:
             self.write_file(path, result)
         else:
-            self.echo_output(path, result)
+            print("\n")
+            print( horizontal_rule() )
+            print("%s RESULT:" % path)
+            print( horizontal_rule() )
+            print(result)
+
 
     def write(self, file_path, new_class, template=None, extra_ctx={}, modules=[], filters=[]):
         ctx = self.sliced_ctx(file_path, new_class, template=template, extra_ctx=extra_ctx, modules=modules, filters=filters)
@@ -295,13 +300,6 @@ class FileAppCommand(AppCommand):
 
     def get_template(self, path, using='jinja2'):
         return get_template(path, using=using)
-
-    def echo_output(self, file_path, data):
-        print("\n")
-        print( horizontal_rule() )
-        print("%s RESULT:" % file_path)
-        print( horizontal_rule() )
-        print(data)
 
     # def get_import_line(self, imp_module):
     #     '''

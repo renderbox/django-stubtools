@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-12 12:37:02
+# @Last Modified time: 2018-12-19 16:54:10
 #--------------------------------------------
 
 # import os.path
@@ -19,6 +19,7 @@ from stubtools.core import FileAppCommand, parse_app_input
 from stubtools.core.search import get_first_index, get_last_index, get_first_and_last_index
 from stubtools.core.file import write_file, PythonFileParser
 from stubtools.core.prompt import horizontal_rule, selection_list
+from stubtools.core.filters import admin_ctx_filter
 
 
 class Command(FileAppCommand):
@@ -41,18 +42,6 @@ class Command(FileAppCommand):
             print("\nExiting...")
             return
 
-        # for entry in args:
-
-        #     try:
-        #         app, model = entry.split(".")
-        #         self.process(app, model)
-
-        #     except ValueError:
-        #         app = entry
-        #         models = input("Which model(s) did you want to work on in the app \"%s\"? (Model Model ...) > " % app)  # todo: replace with selection prompt
-
-        #         for model in models.split():
-        #             self.process(app, model)
 
     def get_context(self, app, model, app_models=None, **kwargs):
 
@@ -63,10 +52,9 @@ class Command(FileAppCommand):
 
         model_list = [model]
 
-        result = { 'header':"", 'pre_admin':"", 'pre_registration':"", 'footer':"",'model':model, 
-                    'model_admin':model_admin, 'admin_import':"",
+        result = {  'model':model, 'model_admin':model_admin, 'admin_import':"",
                     'create_model_admin':True, 'model_class_import_statement':"",
-                    'model_class_module':".models"}
+                    'model_class_module':".models", 'register_model_admin':True}
 
         # Update the import line to include any missing model classes
         model_list.extend(app_models)
@@ -78,6 +66,7 @@ class Command(FileAppCommand):
 
     def process(self, app, model, **kwargs):
         admin_file = "%s/admin.py" % app
+        admin_template_file = 'stubtools/stubadmin/admin.py.j2'
 
         print("ADMIN FILE: %s" % admin_file)
 
@@ -90,73 +79,52 @@ class Command(FileAppCommand):
 
         self.load_file(admin_file)
 
-
         #######################
         # PARSE admin.py
         #######################
 
-        if self.debug:
-            print( horizontal_rule() )
-            print("FILE STRUCTURE:")
-            self.pp.pprint(self.parser.structure)
+        # if self.debug:
+        #     print( horizontal_rule() )
+        #     print("FILE STRUCTURE:")
+        #     self.pp.pprint(self.parser.structure)
 
-        modules = []
-        comment = ""
+        # modules = []
+        # comment = ""
 
-        admin_import_line = self.parser.get_import_line("django.contrib")  # Does a check to see if the line is already included or not
-
-        #########
-        # FILE PARTS
-
-        self.parser.set_import_slice(".models")
-
-        self.render_ctx['header'] = self.parser.get_header()
-        self.render_ctx['footer'] = self.parser.get_footer()
-
-        if self.parser.structure['expressions']:
-            self.render_ctx['body'] = self.parser.get_text_slice(self.parser.structure['body_start_index'], self.parser.structure['last_class_line'] - 1)
-            self.render_ctx['registration'] = self.parser.get_text_slice(self.parser.structure['last_class_line'], self.parser.structure['body_end_index'])
-        else:
-            self.render_ctx['body'] = self.parser.get_body()
-            self.render_ctx['registration'] = ''
-
-        self.render_ctx['model_class_import_statement'] = self.parser.create_import_statement(self.render_ctx['model'], path=self.render_ctx['model_class_module'])
-
-        if admin_import_line == None:       # if it's not there, prepend the admin import line
-            self.render_ctx['add_django_contrib_import_statement'] = True
-
-        if self.render_ctx['model_admin'] in self.parser.structure['class_list']:
-            print("** %s admin already in '%s', skipping creation..." % (self.render_ctx['model_admin'], admin_file))
-            self.render_ctx['create_model_admin'] = False
-            self.render_ctx['register_model_admin'] = False
-        else:
-            # Check to see if this is already in the AST
-            self.render_ctx['register_model_admin'] = True
+        # admin_import_line = self.parser.get_import_line("django.contrib")  # Does a check to see if the line is already included or not
 
         #######################
         # RENDER THE TEMPLATES
         #######################
 
-        if self.debug:
-            print( horizontal_rule() )
-            print("RENDER CONTEXT:")
-            self.pp.pprint(self.render_ctx)
-            print( horizontal_rule() )
+        # if self.debug:
+        #     print( horizontal_rule() )
+        #     print("RENDER CONTEXT:")
+        #     self.pp.pprint(self.render_ctx)
+        #     print( horizontal_rule() )
 
-        admin_template = get_template('stubtools/stubadmin/admin.py.j2', using='jinja2')
-        admin_result = admin_template.render(context=self.render_ctx)
+        # admin_template = get_template('stubtools/stubadmin/admin.py.j2', using='jinja2')
+        # admin_result = admin_template.render(context=self.render_ctx)
 
+        # if self.debug:
+        #     print( horizontal_rule() )
+        #     print("admin.py RESULT:")
+        #     print( horizontal_rule() )
+        #     print(admin_result)
 
-        if self.debug:
-            print( horizontal_rule() )
-            print("admin.py RESULT:")
-            print( horizontal_rule() )
-            print(admin_result)
+        self.write_files = False
 
-        if self.write_files:
-            self.write_file(admin_file, admin_result)
-            print( horizontal_rule() )
-            print("Wrote File: %s" % admin_file)
+        self.write(admin_file, self.render_ctx['model'], 
+                    template=admin_template_file,
+                    extra_ctx=self.render_ctx, 
+                    modules=[ ('django.contrib', 'admin'),
+                              (self.render_ctx['model_class_module'], self.render_ctx['model']) ],
+                    filters=[admin_ctx_filter])
+
+        # if self.write_files:
+        #     self.write_file(admin_file, admin_result)
+        #     print( horizontal_rule() )
+        #     print("Wrote File: %s" % admin_file)
 
 
     def get_module_import_info(self, module):

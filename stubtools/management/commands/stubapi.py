@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-12-05 14:50:04
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-12-14 17:32:21
+# @Last Modified time: 2018-12-19 16:35:48
 # --------------------------------------------
 import os
 import os.path
@@ -14,6 +14,7 @@ from django.core.management.base import CommandError
 from stubtools.core import FileAppCommand, parse_app_input
 from stubtools.core.prompt import horizontal_rule, selection_list, ask_question
 from stubtools.core.file import PythonFileParser
+from stubtools.core.filters import url_ctx_flter
 
 INSTALL_INSTRUCTIONS = """
 stubapi is meant to work with the Django REST Framework.  
@@ -97,8 +98,8 @@ class Command(FileAppCommand):
 
     def process(self, app, api, api_class, **kwargs):
         api_dir = os.path.join(app, 'api')
-        api_views_file = os.path.join(api_dir, 'views.py')
-        api_urls_file = os.path.join(api_dir, 'urls.py')
+        view_file = os.path.join(api_dir, 'views.py')
+        url_file = os.path.join(api_dir, 'urls.py')
         serializers_file = os.path.join(api_dir, 'serializers.py')
 
         self.render_ctx = self.get_context(app, api, api_class, **kwargs)
@@ -121,24 +122,18 @@ class Command(FileAppCommand):
 
         ####
         # Views
-        self.write(api_views_file, self.render_ctx['api_view_class'],
+        self.write(view_file, self.render_ctx['api_view_class'],
                     template='stubtools/stubapi/views.py.j2',
                     extra_ctx=self.render_ctx, 
                     modules=[   ("rest_framework", "generics"),
                                 ( self.render_ctx['model_class_module'], self.render_ctx['model'] ),
-                                ( ".serializers", self.render_ctx['serializer_class']),
-                            ])
+                                ( ".serializers", self.render_ctx['serializer_class']) ])
 
         ####
         # URLs
-
-        # self.write_files = False            # While Debugging
-
-        # api_urls_template = self.get_template('stubtools/stubapi/urls.py.j2')
-        # api_urls_result = api_urls_template.render(context=self.render_ctx)
-
-        # if self.write_files:
-        #     self.write_file(api_urls_file, api_urls_result)
-        # else:
-        #     self.echo_output(api_urls_file, api_urls_result)
+        self.write(url_file, self.render_ctx['view_class'], 
+                    template=url_template_file,
+                    extra_ctx=self.render_ctx, 
+                    modules=url_modules,
+                    filters=[url_ctx_flter])
 

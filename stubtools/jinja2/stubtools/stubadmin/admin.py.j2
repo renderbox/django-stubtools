@@ -1,6 +1,5 @@
-{{ header }}{% if add_django_contrib_import_statement %}
-from django.contrib import admin
-{% endif %}{{ model_class_import_statement }}
+{{ header }}
+{{ import_statements }}
 {{ body }}
 {% if not body %}
 ###############
