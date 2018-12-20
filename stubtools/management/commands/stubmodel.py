@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-12 11:04:12
+# @Last Modified time: 2018-12-19 17:36:39
 #--------------------------------------------
 
 import os.path
@@ -105,6 +105,7 @@ class Command(FileAppCommand):
     def process(self, app, model, model_class, **kwargs):
 
         model_file = os.path.join(app, "models.py")
+        model_file_template = os.path.join('stubtools', 'stubmodel', "model.py.j2")
 
         print("MODEL FILE: %s" % model_file)
 
@@ -173,10 +174,10 @@ class Command(FileAppCommand):
         # self.render_ctx['model_body'] = "".join(data_lines[body_start_index:body_end_index])      # between the import line and where the model needs to be added
         # self.render_ctx['model_footer'] = "".join(data_lines[footer_start_index:])         # after the model code
 
-        self.render_ctx['import_statement'] = self.create_import_line(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'])
-        self.render_ctx['header'] = self.parser.get_header()
-        self.render_ctx['footer'] = self.parser.get_footer()
-        self.render_ctx['body'] = self.parser.get_body()
+        # self.render_ctx['import_statement'] = self.create_import_line(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'])
+        # self.render_ctx['header'] = self.parser.get_header()
+        # self.render_ctx['footer'] = self.parser.get_footer()
+        # self.render_ctx['body'] = self.parser.get_body()
 
         #######################
         # RENDER THE TEMPLATES
@@ -187,16 +188,28 @@ class Command(FileAppCommand):
             print("RENDER CONTEXT:")
             self.pp.pprint(self.render_ctx)
 
-        model_template = get_template('stubtools/stubmodel/model.py.j2', using='jinja2')
-        model_result = model_template.render(context=self.render_ctx)
+        self.write_files = False            # While Debugging
 
-        if self.render_ctx['create_model'] and not self.debug:
-            self.write_file(model_file, model_result)
+        ####
+        # Views
+        self.write(model_file, self.render_ctx['model'], 
+                    template=model_file_template,
+                    extra_ctx=self.render_ctx, 
+                    modules=[ ('django.utils.translation', 'ugettext_lazy'),
+                              # ('django.contrib.postgres.fields', 'JSONField'),
+                              ('django.db', 'models') ])
+
+
+        # model_template = get_template('stubtools/stubmodel/model.py.j2', using='jinja2')
+        # model_result = model_template.render(context=self.render_ctx)
+
+        # if self.render_ctx['create_model'] and not self.debug:
+        #     self.write_file(model_file, model_result)
         
-        if self.debug:
-            print( horizontal_rule() )
-            print("models.py RESULT:")
-            print(model_result)
+        # if self.debug:
+        #     print( horizontal_rule() )
+        #     print("models.py RESULT:")
+        #     print(model_result)
 
         # This lets the uer create new views to match
 
