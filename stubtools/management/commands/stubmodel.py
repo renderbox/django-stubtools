@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-19 17:36:39
+# @Last Modified time: 2018-12-21 15:40:00
 #--------------------------------------------
 
 import os.path
@@ -138,7 +138,7 @@ class Command(FileAppCommand):
 
         # check to see if the model is already in models.py
         if self.render_ctx['model'] in self.parser.structure['class_list']:
-            print("** %s model already in '%s', skipping creation" % (self.render_ctx['model'], model_file))
+            print("** \"%s\" model already in '%s', skipping creation..." % (self.render_ctx['model'], model_file))
             self.render_ctx['create_model'] = False
 
         # # Establish the Segments
@@ -188,31 +188,17 @@ class Command(FileAppCommand):
             print("RENDER CONTEXT:")
             self.pp.pprint(self.render_ctx)
 
-        self.write_files = False            # While Debugging
+        ####
+        # Model
+        if self.render_ctx['create_model']:
+            self.write(model_file, self.render_ctx['model'], 
+                        template=model_file_template,
+                        extra_ctx=self.render_ctx, 
+                        modules=[ ('django.utils.translation', 'ugettext_lazy'),
+                                  ('django.db', 'models') ])
 
         ####
         # Views
-        self.write(model_file, self.render_ctx['model'], 
-                    template=model_file_template,
-                    extra_ctx=self.render_ctx, 
-                    modules=[ ('django.utils.translation', 'ugettext_lazy'),
-                              # ('django.contrib.postgres.fields', 'JSONField'),
-                              ('django.db', 'models') ])
-
-
-        # model_template = get_template('stubtools/stubmodel/model.py.j2', using='jinja2')
-        # model_result = model_template.render(context=self.render_ctx)
-
-        # if self.render_ctx['create_model'] and not self.debug:
-        #     self.write_file(model_file, model_result)
-        
-        # if self.debug:
-        #     print( horizontal_rule() )
-        #     print("models.py RESULT:")
-        #     print(model_result)
-
-        # This lets the uer create new views to match
-
         if self.render_ctx['create_model_views']:
             from stubtools.management.commands.stubview import Command as ViewCommand
             vc = ViewCommand()

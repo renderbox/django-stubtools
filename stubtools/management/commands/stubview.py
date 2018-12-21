@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-18 11:00:39
+# @Last Modified time: 2018-12-21 15:13:25
 #--------------------------------------------
 
 import re, os.path
@@ -205,8 +205,6 @@ class Command(FileAppCommand):
         # #######################
         # # RENDER THE TEMPLATES
         # #######################
-
-        self.write_files = False            # While Debugging
 
         ####
         # Views

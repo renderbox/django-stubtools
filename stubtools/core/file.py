@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-08 11:30:11
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-12-19 17:02:35
+# @Last Modified time: 2018-12-21 15:16:36
 # --------------------------------------------
 
 import os
@@ -31,7 +31,6 @@ class PythonFileParser():
 
     structure = {}
     data_lines = []
-    write_files = True
 
     def __init__(self, file_path=None):
 
@@ -133,11 +132,6 @@ class PythonFileParser():
 
         result = self.data_by_line[self.structure['first_import_line']:self.structure['last_import_line'] + 1]
 
-        # print("MODULES:")
-        # print(modules)
-
-        # print(self.structure)
-
         for module in modules:
 
             if len(module) > 1:
@@ -149,11 +143,6 @@ class PythonFileParser():
                 from_path = module[0]
                 import_mods = module[1:]
             else:   # assume it's just the import
-
-                # print("Single Entry")
-                # print(module)
-                # print(type(module))
-
                 mod = module[0]
 
                 if mod.startswith("."):
@@ -162,9 +151,6 @@ class PythonFileParser():
                 from_check = None
                 from_path = None
                 import_mods = [ module[0] ]
-
-            # print("from_check: %s" % from_check)
-            # print("from_path: %s" % from_path)
 
             for mod in import_mods:
                 # Go through each mod to see if it's already in the list of mods
@@ -178,9 +164,6 @@ class PythonFileParser():
                         # Check the imports to see if it's already included
                         extend_list = list([x for x in import_mods if x not in imp['import']])
 
-                        # print("EXTEND LIST: %s" % imp['from'])
-                        # print(extend_list)
-
                         if extend_list:
                             # If there is anything to append...
                             new_import_list = []
@@ -189,7 +172,6 @@ class PythonFileParser():
 
                             # Modify the import line
                             mod_line_index_number = imp['first_line'] - self.structure['first_import_line']
-                            # print("MODE LINE INDEX: %d" % mod_line_index_number)
                             comment = "#".join(result[mod_line_index_number].split("#")[1:] )     # Try to capture any comments on the line and preserve them
 
                             if from_path != None:
@@ -202,13 +184,10 @@ class PythonFileParser():
 
                 # If it's not present, append it to the list of imports
                 if append:
-                    # print("APPENDING")
                     if from_path != None:
                         result.append("from %s import %s" % (from_path, ", ".join(import_mods) ) )
                     else:
                         result.append("import %s" % ( ", ".join(import_mods) ) )
-
-        # print(result)
 
         return "\n".join(result)
 
@@ -236,7 +215,6 @@ class PythonFileParser():
 
         # HEADER
         if self.structure['last_import_line'] != None:
-            # print("LOOKING FOR %s" % module)
 
             from_check = module
 
@@ -246,7 +224,6 @@ class PythonFileParser():
 
             if from_check and from_check in self.structure['from_list']:    # if the module passed in is in the Python File, use that
                 i = self.structure['from_list'].index(from_check)
-                # print("MODULE FOUND AT: %d" % self.structure['imports'][i]['node'].lineno)
                 header_end_index = self.structure['imports'][i]['node'].lineno - 2
                 body_start_index = self.structure['imports'][i]['node'].lineno
             else:
@@ -389,7 +366,6 @@ class PythonFileParser():
         if from_check in self.structure['from_list']:             # if the module passed in is in the Python File, use that
             i = self.structure['from_list'].index(from_check)
             mod_list.extend( self.structure['imports'][i]['import'] )
-            # print("EXTENDING THE MODULE LIST")
 
             # Look for comment and append if needed
             parts = self.data_lines[ self.structure['imports'][i]['node'].lineno - 1 ].split("#")    # Split off any comments
@@ -398,9 +374,6 @@ class PythonFileParser():
 
         if module not in mod_list:
             mod_list.append(module)
-
-        # print("MOD LIST")
-        # print(mod_list)
 
         if sort:
             mod_list.sort()             # Sort the modules

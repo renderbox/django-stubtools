@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-12-05 14:50:04
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-12-19 16:35:48
+# @Last Modified time: 2018-12-21 15:13:05
 # --------------------------------------------
 import os
 import os.path
@@ -108,9 +108,6 @@ class Command(FileAppCommand):
             # IF an empty dict comes back, it falied the queries for some reason (maybe it already exists in the file)
             return
 
-        # Slice the files...
-
-        self.write_files = False            # While Debugging
 
         ####
         # Serializers

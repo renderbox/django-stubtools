@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-12 14:37:38
+# @Last Modified time: 2018-12-21 15:40:27
 #--------------------------------------------
 
 # from django.core.management.base import CommandError
@@ -67,6 +67,7 @@ class Command(FileAppCommand):
 
     def process(self, app, model, **kwargs):
         form_file = "%s/forms.py" % app
+        form_file_template = 'stubtools/stubform/forms.py.j2'
 
         print("FORM FILE: %s" % form_file)
 
@@ -77,74 +78,80 @@ class Command(FileAppCommand):
 
         self.render_ctx = self.get_context(app, model, app_models=app_models, **kwargs)
 
-        self.load_file(form_file)
-
+        # self.load_file(form_file)
 
         #######################
         # PARSE forms.py
         #######################
 
-        if self.debug:
-            print( horizontal_rule() )
-            print("FILE STRUCTURE:")
-            self.pp.pprint(self.parser.structure)
+        # if self.debug:
+        #     print( horizontal_rule() )
+        #     print("FILE STRUCTURE:")
+        #     self.pp.pprint(self.parser.structure)
 
-        # Checkt to see if the form is already in the file and skip if it is...
+        # Check to see if the form is already in the file and skip if it is...
         if self.render_ctx['model_form'] in self.parser.structure['class_list']:
-            print("** %s form already in '%s', skipping creation..." % (self.render_ctx['model_form'], form_file))
+            print("** \"%s\" form already in '%s', skipping creation..." % (self.render_ctx['model_form'], form_file))
             return
 
-        modules = []
-        comment = ""
+        # modules = []
+        # comment = ""
 
-        form_import_line = self.parser.get_import_line("django.forms")  # Does a check to see if the line is already included or not
+        # form_import_line = self.parser.get_import_line("django.forms")  # Does a check to see if the line is already included or not
 
-        #########
-        # FILE PARTS
+        # #########
+        # # FILE PARTS
 
-        self.parser.set_import_slice(".models")
+        # self.parser.set_import_slice(".models")
 
-        self.render_ctx['header'] = self.parser.get_header()
-        self.render_ctx['body'] = self.parser.get_body()
-        self.render_ctx['footer'] = self.parser.get_footer()
+        # self.render_ctx['header'] = self.parser.get_header()
+        # self.render_ctx['body'] = self.parser.get_body()
+        # self.render_ctx['footer'] = self.parser.get_footer()
 
-        self.render_ctx['import_statement'] = self.parser.create_import_statement(self.render_ctx['model'], path=self.render_ctx['model_class_module'])
+        # self.render_ctx['import_statement'] = self.parser.create_import_statement(self.render_ctx['model'], path=self.render_ctx['model_class_module'])
 
-        if form_import_line == None:       # if it's not there, prepend the form import line
-            # self.render_ctx['add_django_import_statement'] = True
-            self.render_ctx['import_statement'] = "from django.forms import ModelForm\n" + self.render_ctx['import_statement']
+        # if form_import_line == None:       # if it's not there, prepend the form import line
+        #     # self.render_ctx['add_django_import_statement'] = True
+        #     self.render_ctx['import_statement'] = "from django.forms import ModelForm\n" + self.render_ctx['import_statement']
 
         #######################
         # RENDER THE TEMPLATES
         #######################
 
-        if self.debug:
-            print( horizontal_rule() )
-            print("RENDER CONTEXT:")
-            self.pp.pprint(self.render_ctx)
-            print( horizontal_rule() )
+        self.write(form_file, self.render_ctx['model_form'], 
+                    template=form_file_template,
+                    extra_ctx=self.render_ctx, 
+                    modules=[ ('django.forms', 'ModelForm'),
+                              ('.models', self.render_ctx['model']) ])
 
-        form_template = get_template('stubtools/stubform/forms.py.j2', using='jinja2')
-        form_result = form_template.render(context=self.render_ctx)
 
-        if self.debug:
-            print( horizontal_rule() )
-            print("forms.py RESULT:")
-            print( horizontal_rule() )
-            print(form_result)
+        # if self.debug:
+        #     print( horizontal_rule() )
+        #     print("RENDER CONTEXT:")
+        #     self.pp.pprint(self.render_ctx)
+        #     print( horizontal_rule() )
 
-        if self.write_files:
-            self.write_file(form_file, form_result)
-            print( horizontal_rule() )
-            print("Wrote File: %s" % form_file)
+        # form_template = get_template('stubtools/stubform/forms.py.j2', using='jinja2')
+        # form_result = form_template.render(context=self.render_ctx)
 
-    def get_module_import_info(self, module):
-        i = self.parser.structure['from_list'].index(module)
-        result = self.parser.structure['imports'][i]
-        return result
+        # if self.debug:
+        #     print( horizontal_rule() )
+        #     print("forms.py RESULT:")
+        #     print( horizontal_rule() )
+        #     print(form_result)
 
-    def get_header(self):
-        pass
+        # if self.write_files:
+        #     self.write_file(form_file, form_result)
+        #     print( horizontal_rule() )
+        #     print("Wrote File: %s" % form_file)
+
+    # def get_module_import_info(self, module):
+    #     i = self.parser.structure['from_list'].index(module)
+    #     result = self.parser.structure['imports'][i]
+    #     return result
+
+    # def get_header(self):
+    #     pass
 
 # class Command(FileAppCommand):
 #     args = '<app.model_name>'

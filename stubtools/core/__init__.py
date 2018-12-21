@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-19 17:06:01
+# @Last Modified time: 2018-12-21 15:09:51
 #--------------------------------------------
 import re, os.path
 import ast
@@ -202,13 +202,6 @@ class FileAppCommand(AppCommand):
 
         for ctx_filter in filters:
             ctx = ctx_filter(ctx, parser)
-
-        # if django_url:    # Do special URL Parsing Here
-        #     ctx = self.url_ctx(ctx, parser)
-
-        # if self.debug:
-        #     self.pp.pprint(parser.structure)
-        #     self.pp.pprint(ctx)
 
         return ctx
 
