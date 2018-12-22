@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-21 15:09:51
+# @Last Modified time: 2018-12-21 15:47:12
 #--------------------------------------------
 import re, os.path
 import ast
@@ -221,6 +221,7 @@ class FileAppCommand(AppCommand):
     def write(self, file_path, new_class, template=None, extra_ctx={}, modules=[], filters=[]):
         ctx = self.sliced_ctx(file_path, new_class, template=template, extra_ctx=extra_ctx, modules=modules, filters=filters)
         self.write_template(ctx, file_path, template)
+        print("Wrote File: \"%s\"" % file_path)
 
     def create_import_line(self, module, path=None, modules=[], comment=None, sort=False):
         mod_list = []                   # Start with just the required

@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-21 15:13:25
+# @Last Modified time: 2018-12-21 17:10:29
 #--------------------------------------------
 
 import re, os.path
@@ -47,6 +47,7 @@ class Command(FileAppCommand):
     def get_context(self, app, view, view_setting_key, **kwargs):
 
         view_class_settings = self.get_class_settings(View, ignore_modules=STUBTOOLS_IGNORE_MODULES, settings=VIEW_CLASS_SETTINGS)      # todo: move this over to a settings option
+        self.pp.pprint(view_class_settings)
         view_class_shortname_map = dict([(v['class_name'], k) for k, v in view_class_settings.items()])
 
         # PICK THE VIEW CLASS TO USE BASED ON A LIST OF AVAILABLE CLASSES IF NOT SET IN THE COMMAND LINE

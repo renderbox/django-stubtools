@@ -12,13 +12,9 @@ class {{ model }}({{ model_class }}):{% if description %}
     def __str__(self):
         return self.name
 
-{% if model_detail_url_name -%}
-    def get_absolute_url(self):
-        return reverse('{{ model_detail_url_name }}'{% if not slug_name %}, args=[str(self.id)]{% else %}, kwargs={'{{ slug_name }}':self.slug}{% endif %}  )
-{% else %}
+    ### Uncomment to expose...
     # def get_absolute_url(self):
     #     return reverse('detail-page-name'{% if not slug_name %}, args=[str(self.id)]{% else %}, kwargs={'{{ slug_name }}':self.slug}{% endif %}  )
-{% endif %}
 
 {% endif %}
 {{ footer }}
