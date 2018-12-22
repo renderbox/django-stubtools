@@ -3,20 +3,20 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-21 15:40:00
+# @Last Modified time: 2018-12-21 17:07:30
 #--------------------------------------------
 
 import os.path
 
-from django.template.loader import get_template
+# from django.template.loader import get_template
+from django.conf import settings
 
-from django.core.management.base import CommandError
-from django.db import models
+# from django.core.management.base import CommandError
+# from django.db import models
 from django.db.models import Model, Field
 
-from stubtools.core import FileAppCommand, underscore_camel_case, import_line_check, class_name, get_all_subclasses, parse_app_input, get_file_lines, split_camel_case
-from stubtools.core.prompt import ask_question, ask_yes_no_question, selection_list, horizontal_rule
-from stubtools.core.parse import get_import_range, get_classes_and_functions_start, get_classes_and_functions
+from stubtools.core import FileAppCommand, get_all_subclasses, parse_app_input, split_camel_case
+from stubtools.core.prompt import ask_yes_no_question, selection_list, horizontal_rule
 
 # Fields that are not really meant to be included in the list of useable Model Fields
 EXCLUDED_FIELDS = ['BLANK_CHOICE_DASH', 'Empty', 'Field', 'FieldDoesNotExist', 'NOT_PROVIDED']
@@ -74,14 +74,18 @@ class Command(FileAppCommand):
         render_ctx['create_model_form'] = ask_yes_no_question("Create a matching Model Form?", default=True, required=True)
         render_ctx['create_model_views'] = ask_yes_no_question("Create matching Model Views?", default=True, required=True)
         # render_ctx['create_model_api'] = ask_yes_no_question("Create matching Model API?", default=True, required=True)
+        render_ctx['create_model_api'] = False
+
+        if render_ctx['create_model_api'] and 'rest_framework' not in settings.INSTALLED_APPS:
+            render_ctx['create_model_api'] = False
+            print("Please make sure you have the Django Rest Framework installed and 'rest_framework' added to your INSTALLED_APPS in settings.py")
 
         if render_ctx['create_model_views']:
             render_ctx['create_model_detail'] = ask_yes_no_question("Create a Model Detail View?", default=True, required=True)
             render_ctx['create_model_list'] = ask_yes_no_question("Create a Model List View?", default=True, required=True)
-
-            # render_ctx['create_model_create'] = ask_yes_no_question("Create a Model Create View?", default=True, required=True)
-            # render_ctx['create_model_edit'] = ask_yes_no_question("Create a Model Edit View?", default=True, required=True)
-            # render_ctx['create_model_delete'] = ask_yes_no_question("Create a Model Delete View?", default=True, required=True)
+            render_ctx['create_model_create'] = ask_yes_no_question("Create a Model Create View?", default=True, required=True)
+            render_ctx['create_model_update'] = ask_yes_no_question("Create a Model Edit View?", default=True, required=True)
+            render_ctx['create_model_delete'] = ask_yes_no_question("Create a Model Delete View?", default=True, required=True)
 
         # In this case, load the other commands and give them settings
 
@@ -107,12 +111,6 @@ class Command(FileAppCommand):
         model_file = os.path.join(app, "models.py")
         model_file_template = os.path.join('stubtools', 'stubmodel', "model.py.j2")
 
-        print("MODEL FILE: %s" % model_file)
-
-        if self.debug:
-            print("CONTEXT")
-            print(kwargs)
-
         self.render_ctx = self.get_context(app, model, model_class, **kwargs)
 
         self.load_file(model_file)
@@ -121,72 +119,14 @@ class Command(FileAppCommand):
         # # PARSE models.py
         # #######################
 
-        if self.debug:
-            print( horizontal_rule() )
-            print("FILE STRUCTURE:")
-            self.pp.pprint(self.parser.structure)
-
-        # # Slice and Dice!
-        # data_lines = get_file_lines(model_file)
-        # line_count = len(data_lines)
-        # self.structure = self.parse_code("".join(data_lines))
-
-        # if self.debug:
-        #     print( horizontal_rule() )
-        #     print("FILE STRUCTURE (%s):" % model_file)
-        #     self.pp.pprint(self.structure)
-
         # check to see if the model is already in models.py
         if self.render_ctx['model'] in self.parser.structure['class_list']:
             print("** \"%s\" model already in '%s', skipping creation..." % (self.render_ctx['model'], model_file))
             self.render_ctx['create_model'] = False
 
-        # # Establish the Segments
-        # if self.structure['first_import_line']:
-        #     body_start_index = self.structure['last_import_line']
-        #     header_end_index = body_start_index
-        # else:
-        #     body_start_index = 0
-        #     header_end_index = body_start_index
-
-        # if self.structure['first_code_line']:
-        #     body_end_index = self.structure['last_code_line']      # Get the last line of code as an index value
-        # else:
-        #     body_end_index = body_start_index + 1
-
-        # footer_start_index = body_end_index
-
-        # modules = []        # List of other modules being loaded
-        # comment = None
-
-        # # Check to see if the needed 'from' module is already being loaded.  If so, adjust where the header ends and the body starts
-        # if self.get_import_line(self.render_ctx['model_class_module']):
-        #     i = self.structure['from_list'].index(self.render_ctx['model_class_module'])
-        #     import_info = self.structure['imports'][i]
-        #     modules = import_info['import']
-        #     import_lineno = import_info['first_line']
-        #     header_end_index = import_lineno - 1
-        #     body_start_index = import_lineno
-
-        # Segment Values
-        # self.render_ctx['model_import_statement'] = self.create_import_line(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'], modules=modules, comment=comment)
-        # self.render_ctx['model_header'] = "".join(data_lines[:header_end_index])         # In between the first line and the module import
-        # self.render_ctx['model_body'] = "".join(data_lines[body_start_index:body_end_index])      # between the import line and where the model needs to be added
-        # self.render_ctx['model_footer'] = "".join(data_lines[footer_start_index:])         # after the model code
-
-        # self.render_ctx['import_statement'] = self.create_import_line(self.render_ctx['model_class_import'], path=self.render_ctx['model_class_module'])
-        # self.render_ctx['header'] = self.parser.get_header()
-        # self.render_ctx['footer'] = self.parser.get_footer()
-        # self.render_ctx['body'] = self.parser.get_body()
-
         #######################
         # RENDER THE TEMPLATES
         #######################
-
-        if self.debug:
-            print( horizontal_rule() )
-            print("RENDER CONTEXT:")
-            self.pp.pprint(self.render_ctx)
 
         ####
         # Model
@@ -198,7 +138,12 @@ class Command(FileAppCommand):
                                   ('django.db', 'models') ])
 
         ####
+        # Forms
+
+
+        ####
         # Views
+        print("VIEWS")
         if self.render_ctx['create_model_views']:
             from stubtools.management.commands.stubview import Command as ViewCommand
             vc = ViewCommand()
@@ -206,11 +151,23 @@ class Command(FileAppCommand):
             view_kwargs = {}
 
             if self.render_ctx['create_model_detail']:
-                vc.process(app, self.render_ctx['model_name'], "django.views.generic.detail.DetailView", model=self.render_ctx['model'])
-                view_kwargs['template_in_app'] = vc.render_ctx['template_in_app']
+                vc.process(app, self.render_ctx['model_name'], "django.views.generic.detail.DetailView", model=self.render_ctx['model'], **view_kwargs)
+                view_kwargs['template_in_app'] = vc.render_ctx['template_in_app']   # Append the anser to the view kwargs so it is not asked again
 
             if self.render_ctx['create_model_list']:
                 vc.process(app, self.render_ctx['model_name'], "django.views.generic.list.ListView", model=self.render_ctx['model'], **view_kwargs)
+
+            if self.render_ctx['create_model_create']:
+                vc.process(app, self.render_ctx['model_name'], "django.views.generic.edit.CreateView", model=self.render_ctx['model'], **view_kwargs)
+
+            if self.render_ctx['create_model_update']:
+                vc.process(app, self.render_ctx['model_name'], "django.views.generic.edit.UpdateView", model=self.render_ctx['model'], **view_kwargs)
+
+            if self.render_ctx['create_model_delete']:
+                vc.process(app, self.render_ctx['model_name'], "django.views.generic.edit.DeleteView", model=self.render_ctx['model'], **view_kwargs)
+
+        ####
+        # Admin
 
         if self.render_ctx['create_model_admin']:
 
@@ -220,3 +177,14 @@ class Command(FileAppCommand):
             admin_kwargs = {}
 
             ac.process(app, self.render_ctx['model'])
+
+        ####
+        # APIs
+
+        # if self.render_ctx['create_model_api']:
+        #     from stubtools.management.commands.stubapi import Command as ApiCommand
+        #     ap = ApiCommand()
+        #     ap.debug = self.debug
+        #     admin_kwargs = {}
+
+        #     ap.process(app, self.render_ctx['model'])
