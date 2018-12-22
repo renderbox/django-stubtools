@@ -1,0 +1,10 @@
+{% extends "stubtools/stubview/page.html.j2" %}
+
+{% block content %}
+<div class="row">
+	<div class="col-md-12">
+		<h2>{{ view_name }}, CreateView Stub Page</h2>
+		<a href="{% raw %}{% url{% endraw %} '{{ resource_name }}' {% raw %}%}{% endraw %}">link</a>
+	</div>
+</div>
+{% endblock %}

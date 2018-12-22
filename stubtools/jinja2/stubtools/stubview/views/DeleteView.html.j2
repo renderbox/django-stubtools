@@ -1,0 +1,15 @@
+{% extends "stubtools/stubview/page.html.j2" %}
+
+{% block content %}
+<div class="row">
+	<div class="col-md-12">
+		<h2>{{ view_name }}, DeleteView Stub Page</h2>
+		<a href="{% raw %}{% url{% endraw %} '{{ resource_name }}' {% raw %}%}{% endraw %}">link</a>
+		
+		<form method="post">{% raw %}{% csrf_token %}
+		    <p>Are you sure you want to delete "{{ object }}"?</p>{% endraw %}
+		    <input type="submit" value="Confirm">
+		</form>
+	</div>
+</div>
+{% endblock %}
