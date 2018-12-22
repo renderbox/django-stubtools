@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-21 17:47:58
+# @Last Modified time: 2018-12-21 17:50:33
 #--------------------------------------------
 
 import os.path
@@ -193,7 +193,7 @@ class Command(FileAppCommand):
         else:
             template_file = os.path.join("templates", *self.render_ctx['attributes']['template_name'][1:-1].split("/"))     # todo: get the template folder name from the settings
 
-        if version_check("gte", "2.0.0"):
+        if render_ctx['resource_method'] in ["path", "re_path"]:
             url_modules = [ ("django.urls", "path", "re_path"), ("views",) ]
         else:
             url_modules = [ ("django.conf.urls", "url"), ("views",) ]
