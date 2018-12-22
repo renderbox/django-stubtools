@@ -3,22 +3,17 @@
 # @Author: Grant Viklund
 # @Date:   2017-02-20 13:50:51
 # @Last Modified by:   Grant Viklund
-# @Last Modified time: 2018-12-21 17:10:29
+# @Last Modified time: 2018-12-21 17:47:58
 #--------------------------------------------
 
-import re, os.path
-import django
-import pprint
+import os.path
 
 from django.core.management.base import CommandError
 from django.views.generic.base import View
-from django.template.loader import get_template
 
-from stubtools.core import FileAppCommand, class_name, version_check, get_all_subclasses, split_camel_case, underscore_camel_case, parse_app_input
+from stubtools.core import FileAppCommand, version_check, split_camel_case, parse_app_input
 from stubtools.core.prompt import ask_question, ask_yes_no_question, selection_list, horizontal_rule
-from stubtools.core.parse import IMPORT_REGEX, get_classes_and_functions_start, get_pattern_line, get_all_pattern_lines, get_classes_and_functions, get_import_range
 from stubtools.core.view_classes import VIEW_CLASS_DEFAULT_SETTINGS, VIEW_CLASS_SETTINGS, STUBTOOLS_IGNORE_MODULES
-from stubtools.core.file import PythonFileParser
 from stubtools.core.filters import url_ctx_flter
 
 
