@@ -1,12 +1,19 @@
 {% extends "stubtools/stubview/page.html.j2" %}
 
-{% block head_title %}{% endraw %}{{ view_name }}{% raw %}{% endblock %}
-
 {% block content %}
 <div class="row">
 	<div class="col-md-12">
 		<h2>{{ view_name }}, ListView Stub Page</h2>
 		<a href="{% raw %}{% url{% endraw %} '{{ resource_name }}' {% raw %}%}{% endraw %}">link</a>
+		{%raw %}
+		{% if object_list %}
+		<ul>
+		{% for object in object_list %}
+			<li><a href="{{ object.get_absolute_url }}">{{ object.name }}</a></li>
+		{% endfor %}
+		</ul>
+		{% endif %}
+		{% endraw %}
 	</div>
 </div>
 {% endblock %}
