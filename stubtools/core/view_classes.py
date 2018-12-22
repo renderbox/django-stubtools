@@ -3,7 +3,7 @@
 # @Author: Grant Viklund
 # @Date:   2018-11-05 14:09:40
 # @Last modified by:   Grant Viklund
-# @Last Modified time: 2018-12-16 21:03:42
+# @Last Modified time: 2018-12-21 17:41:00
 # --------------------------------------------
 
 VIEW_CLASS_DEFAULT_SETTINGS = {
@@ -59,6 +59,13 @@ VIEW_CLASS_SETTINGS = {
                 "default": "%(model)s.objects.all()",
                 'required': True
             },
+            {
+                "question": "What variable name should be used for the model instances in the template?",
+                "key": "template_objects_name",
+                'required': False,
+                "default": "object_list",
+                "ignore_default": True,
+            },
         ],
         "class_name": "ListView",
         "view_suffix": "ListView",
@@ -101,6 +108,93 @@ VIEW_CLASS_SETTINGS = {
                 "resource_pattern": "%(view_name)s/<slug:%(slug_url_kwarg)s>/detail/",
             },
     },
+    "django.views.generic.edit.CreateView": {
+        "queries": [
+            {
+                "question": "Which Model is this for?",
+                "key": "model",
+                'required': True
+            },
+            {
+                "question": "Which Form do you want to use?",
+                "key": "form_class",
+                'required': True,
+                "default": "%(model)sForm",
+            },
+        ],
+        "template": 'views/CreateView.html.j2',
+        "view_suffix": "CreateView",
+        "class_name": "CreateView",
+
+        "default_values":
+            {
+                "template_name": "%(app_label)s/%(model_name)s_form.html",
+                "resource_name": "%(app_label)s-%(view_name)s-create",
+                "resource_pattern": "%(view_name)s/%(model_name)s/create/",
+            }
+    },
+    "django.views.generic.edit.UpdateView": {
+        "queries": [
+            {
+                "question": "Which Model is this for?",
+                "key": "model",
+                'required': True
+            },
+            {
+                "question": "Slug Field in the Resource Path?",
+                "key": "slug_url_kwarg",
+                'required': False,
+                "default": "slug",
+                "ignore_default": True,
+            },
+            {
+                "question": "Which Form do you want to use?",
+                "key": "form_class",
+                'required': True,
+                "default": "%(model)sForm",
+            },
+        ],
+        "view_suffix": "UpdateView",
+        "class_name": "UpdateView",
+        "default_values":
+            {
+                "template_name": "%(app_label)s/%(model_name)s_form.html",
+                "resource_name": "%(app_label)s-%(view_name)s-update",
+                "resource_pattern": "%(view_name)s/<slug:%(slug_url_kwarg)s>/edit/",
+            },
+        "template": 'views/UpdateView.html.j2',
+    },
+    "django.views.generic.edit.DeleteView": {
+        "queries": [
+            {
+                "question": "Which Model is this for?",
+                "key": "model",
+                'required': True
+            },
+            {
+                "question": "Slug Field in the Resource Path?",
+                "key": "slug_url_kwarg",
+                'required': False,
+                "default": "slug",
+                "ignore_default": True,
+            },
+            {
+                "question": "Which Form do you want to use?",
+                "key": "form_class",
+                'required': True,
+                "default": "%(model)sForm",
+            },
+        ],
+        "view_suffix": "DeleteView",
+        "class_name": "DeleteView",
+        "default_values":
+            {
+                "template_name": "%(app_label)s/%(model_name)s_confirm_delete.html",
+                "resource_name": "%(app_label)s-%(view_name)s-delete",
+                "resource_pattern": "%(view_name)s/<slug:%(slug_url_kwarg)s>/delete/",
+            },
+        "template": 'views/DeleteView.html.j2',
+    },
     "django.views.generic.edit.FormView": {
         "queries": [
             {
@@ -128,6 +222,6 @@ VIEW_CLASS_SETTINGS = {
         "view_suffix": "RedirectView",
         "class_name": "RedirectView",
         }
-}
+    }
 
 STUBTOOLS_IGNORE_MODULES = ["django.views.i18n", "django.contrib.admin.views"]
