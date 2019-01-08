@@ -200,9 +200,6 @@ class FileAppCommand(AppCommand):
         ctx['footer'] = parser.get_footer()         # Everything after the last code line
         ctx['import_statements'] = parser.get_import_block(modules=modules)
 
-        print("IMPORT STATEMENTS:")
-        print(ctx['import_statements'])
-
         for ctx_filter in filters:
             ctx = ctx_filter(ctx, parser)
 
@@ -222,7 +219,6 @@ class FileAppCommand(AppCommand):
             print(result)
 
     def write(self, file_path, new_class, template=None, extra_ctx={}, modules=[], filters=[]):
-        print(modules)
         ctx = self.sliced_ctx(file_path, new_class, template=template, extra_ctx=extra_ctx, modules=modules, filters=filters)
         self.write_template(ctx, file_path, template)
         print("Wrote File: \"%s\"" % file_path)

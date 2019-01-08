@@ -14,7 +14,7 @@ from django.core.management.base import CommandError
 from stubtools.core import FileAppCommand, parse_app_input, version_check
 from stubtools.core.prompt import horizontal_rule, selection_list, ask_question
 from stubtools.core.file import PythonFileParser
-from stubtools.core.filters import url_ctx_flter
+from stubtools.core.filters import url_ctx_flter, body_as_empty
 
 INSTALL_INSTRUCTIONS = """
 stubapi is meant to work with the Django REST Framework.  
@@ -114,7 +114,7 @@ class Command(FileAppCommand):
             self.render_ctx['resource_method'] = "url"
 
         if self.render_ctx['resource_method'] in ["path", "re_path"]:
-            url_modules = [ ("django.urls", "path", "re_path"), ("views",), ]
+            url_modules = [ ("django.urls", "path", "re_path"), ("%s.api" % app, "views") ]
         else:
             url_modules = [ ("django.conf.urls", "url"), ("views",), ]
 
@@ -146,5 +146,5 @@ class Command(FileAppCommand):
                     template=os.path.join('stubtools', 'stubapi', "urls.py.j2"),
                     extra_ctx=self.render_ctx, 
                     modules=url_modules,
-                    filters=[url_ctx_flter])
+                    filters=[url_ctx_flter, body_as_empty])
 

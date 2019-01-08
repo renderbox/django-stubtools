@@ -27,9 +27,6 @@ def url_ctx_flter(ctx, parser):
             last_line = assignment['last_line']
 
     if last_line:
-        # print("MODIFY BODY")
-        # print("Append After Line: %d" % last_line)
-
         if parser.structure['header_end_index'] == None:     # i.e. If there is no header, start the body from the beginning of the file
             first_body_line = 1
         else:
@@ -73,4 +70,10 @@ def admin_ctx_filter(ctx, parser):
     #     self.render_ctx['create_model_admin'] = False
     #     self.render_ctx['register_model_admin'] = False
 
+    return ctx
+
+def body_as_empty(ctx, parser):
+    '''simple filter to change the body to an empty string if it's None'''
+    if ctx['body'] == None:
+        ctx['body'] = ''
     return ctx

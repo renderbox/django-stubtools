@@ -114,9 +114,6 @@ class PythonFileParser():
 
         self.structure['first_code_line'], self.structure['last_code_line'] = self.ast_first_and_last_line(code)
 
-        # self.structure['from_list'] = [ f['from'] for f in self.structure['imports'] if 'from' in f ]      # Used to see if a line is already imported
-        # self.structure['import_list'] = [ f['from'] for f in self.structure['imports'] if 'from' == None ]      # Used to see if a line is imported as is
-
         self.structure['from_list'] = []
         self.structure['import_list'] = []
 
@@ -149,30 +146,16 @@ class PythonFileParser():
         else:
             result = self.data_by_line[self.structure['first_import_line']:self.structure['last_import_line'] + 1]
 
-        print("IMPORT LINES")
-        print(result)
-
         from_dict = {}
-
-        self.pp.pprint(self.structure['imports'])
 
         for item in self.structure['imports']:
             if item.get('from', None):
                 from_dict[item['from']] = {'import':item['import'], 'index':item['first_line'] - self.structure['first_import_line']}
 
-        print( "FROM DICT:" )
-        print( from_dict )
-
         for module in modules:
-
             # module = ('django.urls', 'path', 're_path')
 
-            # print( "MODULE:" )
-            # print( module )
-
             if len(module) == 1:
-                print("IMPORT LIST")
-                print(self.structure['import_list'])
                 if module[0] not in self.structure['import_list']:      # if the mosule is not already imported add it to the import block
                     result.append("import %s" % module[0] )
             else:
@@ -203,90 +186,6 @@ class PythonFileParser():
 
                         result[import_index] = result.append("from %s import %s" % (from_path, ", ".join( import_mods ) ) )
 
-
-
-
-
-            # print("From Path:")
-            # print(from_path)
-
-            # print("Import Mods:")
-            # print(import_mods)
-
-            # print("IMPORTS STRUCTURE")
-            # print(self.structure['imports'])
-
-            # Check to see if the 'from' is in the imports
-
-            # if from_path:   # Check the imported modules
-            #     if from_path[0] == ".":
-            #         from_check = from_path[1:]
-            #     else:
-            #         from_check = from_path
-
-            #     if from_check in from_list:
-            #         print("MODULE PRESENT: %s" % from_path)
-            #         # Now cehck to see if the individual module is present in the path
-            #     else:
-            #         print("ADDING IMPORT STATEMENT")
-
-            #         # CHECK TO SEE IF THE CONTENTS ARE ALREADY PRESENT
-
-
-            # for mod in import_mods:
-            #     # BUG WHERE THINGS GET ADDED TWICE IF THERE ARE MORE THAN ONE ELEMENT IN THE LIST OF IMPORTS FROM THE SAME MODULE
-            #     # Go through each mod to see if it's already in the list of mods
-            #     append = True
-            #     # print( "IMPORT MOD:" )
-            #     # print(mod)
-
-            #     # CHECK TO SEE IF IT"S ALREADY IN THE FILE AND 
-            #     for imp in self.structure['imports']:
-            #         print("IMP:")
-            #         print(imp)
-
-            #         print("STRUCTURE IMPORTS")
-            #         print(self.structure['imports'])
-
-            #         if from_check == imp.get('from', None):
-            #             append = False      # No longer try to append the line, look to update it
-
-            #             # Check the imports to see if it's already included
-            #             extend_list = list([x for x in import_mods if x not in imp['import']])
-
-            #             if extend_list:
-            #                 # If there is anything to append...
-            #                 new_import_list = []
-            #                 new_import_list.extend(imp['import'])
-            #                 new_import_list.extend(extend_list)
-
-            #                 print("New Import List:")
-            #                 print(new_import_list)
-
-            #                 # Modify the import line
-            #                 mod_line_index_number = imp['first_line'] - self.structure['first_import_line']
-            #                 comment = "#".join(result[mod_line_index_number].split("#")[1:] )     # Try to capture any comments on the line and preserve them
-
-            #                 if from_path != None:
-            #                     result[mod_line_index_number] = "from %s import %s" % (from_path, ", ".join(new_import_list) )
-            #                 else:
-            #                     result[mod_line_index_number] = "import %s" % ( ", ".join(new_import_list) )
-
-            #                 if comment: # Append the comment
-            #                     result[mod_line_index_number] = result[mod_line_index_number] + "    #" + comment
-
-            #     # If it's not present, append it to the list of imports
-            #     if append:
-            #         print("IMPORT MODS")
-            #         print( import_mods )
-
-            #         if from_path != None:
-            #             result.append("from %s import %s" % (from_path, ", ".join( import_mods ) ) )
-            #         else:
-            #             result.append("import %s" % ( ", ".join( import_mods ) ) )
-
-        # print(result)
-
         return "\n".join(result)
 
     def set_import_slice(self, module=None):
@@ -300,9 +199,6 @@ class PythonFileParser():
         # Set Header End...
         header_end_index = None
         footer_start_index = None
-
-        # if self.structure['first_code_line'] == None:
-        # else:
 
         if self.structure['first_code_line'] == None:               # If there is no code in the file...
             body_start_index = self.structure['first_code_line']
