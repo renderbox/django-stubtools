@@ -11,7 +11,7 @@ import os.path
 from django.conf import settings
 from django.core.management.base import CommandError
 
-from stubtools.core import FileAppCommand, parse_app_input
+from stubtools.core import FileAppCommand, parse_app_input, version_check
 from stubtools.core.prompt import horizontal_rule, selection_list, ask_question
 from stubtools.core.file import PythonFileParser
 from stubtools.core.filters import url_ctx_flter
@@ -70,6 +70,7 @@ class Command(FileAppCommand):
         # Queries
 
         # Which Model?
+
         model = selection_list(app_models, "Pick a model to create a REST API for.", as_string=True)
 
         serializer_class = ask_question("What do you want to call the serializer?", default="%sSerializer" % model)
@@ -101,8 +102,21 @@ class Command(FileAppCommand):
         view_file = os.path.join(api_dir, 'views.py')
         url_file = os.path.join(api_dir, 'urls.py')
         serializers_file = os.path.join(api_dir, 'serializers.py')
+        # url_template_file = os.path.join('stubtools', 'stubapi', "urls.py.j2")
+
+        # Need to capture the Model if it's passed in as part of the commandline?
 
         self.render_ctx = self.get_context(app, api, api_class, **kwargs)
+
+        if version_check("gte", "2.0.0"):
+            self.render_ctx['resource_method'] = "path"
+        else:
+            self.render_ctx['resource_method'] = "url"
+
+        if self.render_ctx['resource_method'] in ["path", "re_path"]:
+            url_modules = [ ("django.urls", "path", "re_path"), ("views",), ]
+        else:
+            url_modules = [ ("django.conf.urls", "url"), ("views",), ]
 
         if not self.render_ctx:
             # IF an empty dict comes back, it falied the queries for some reason (maybe it already exists in the file)
@@ -112,24 +126,24 @@ class Command(FileAppCommand):
         ####
         # Serializers
         self.write(serializers_file, self.render_ctx['serializer_class'], 
-                    template='stubtools/stubapi/serializers.py.j2',
+                    template=os.path.join('stubtools', 'stubapi', "serializers.py.j2"), #'stubtools/stubapi/serializers.py.j2',
                     extra_ctx=self.render_ctx, 
                     modules=[   ("rest_framework", "serializers"),
-                                (self.render_ctx['model_class_module'], self.render_ctx['model']) ])
+                                (self.render_ctx['model_class_module'], self.render_ctx['model']), ])
 
         ####
         # Views
         self.write(view_file, self.render_ctx['api_view_class'],
-                    template='stubtools/stubapi/views.py.j2',
+                    template=os.path.join('stubtools', 'stubapi', "views.py.j2"), # 'stubtools/stubapi/views.py.j2',
                     extra_ctx=self.render_ctx, 
                     modules=[   ("rest_framework", "generics"),
                                 ( self.render_ctx['model_class_module'], self.render_ctx['model'] ),
-                                ( ".serializers", self.render_ctx['serializer_class']) ])
+                                ( ".serializers", self.render_ctx['serializer_class']), ])
 
         ####
         # URLs
-        self.write(url_file, self.render_ctx['view_class'], 
-                    template=url_template_file,
+        self.write(url_file, self.render_ctx['api_view_class'], 
+                    template=os.path.join('stubtools', 'stubapi', "urls.py.j2"),
                     extra_ctx=self.render_ctx, 
                     modules=url_modules,
                     filters=[url_ctx_flter])

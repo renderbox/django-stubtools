@@ -141,10 +141,10 @@ def ast_parse_expression_name(node):
         'expn.value.func.value.attr'='site' 
         for registering an Admin to a Model.
     '''
-    function_name = node.value.func.attr
+    if hasattr(node.value, 'func'):
+        return node.value.func.attr
 
-    return function_name
-
+    return None
 
     # result = []
     # for base in node.bases:
@@ -225,8 +225,11 @@ def ast_parse_expression_args(node):
     '''
     result = {'args':[], 'kwargs':[]}
 
-    result['args'] = [arg.id for arg in node.value.args]
-    result['kwargs'] = node.value.keywords
+    if hasattr(node.value, 'args'):
+        result['args'] = [arg.id for arg in node.value.args]
+
+    if hasattr(node.value, 'keywords'):
+        result['kwargs'] = node.value.keywords
 
     return result
 

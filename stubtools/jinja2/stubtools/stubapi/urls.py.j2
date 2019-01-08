@@ -1,5 +1,7 @@
 {{ header }}
 {{ import_statements }}
-{{ body }}
+{% if not body %}
+urlpatterns = [{% else %}{{ body }}{% endif %}
     path('{{ api_view_path }}/', views.{{ api_view_class }}.as_view(), name='{{ api_view_name }}'),
+{% if not body %}]{% endif %}
 {{ footer }}

@@ -19,6 +19,7 @@ def url_ctx_flter(ctx, parser):
     '''
 
     pp = pprint.PrettyPrinter(indent=4)
+    # pp.pprint(parser.structure)
     last_line = None
 
     for assignment in parser.structure.get('assignments', []):
@@ -29,7 +30,12 @@ def url_ctx_flter(ctx, parser):
         # print("MODIFY BODY")
         # print("Append After Line: %d" % last_line)
 
-        ctx['body'] = parser.get_text_slice_by_line(parser.structure['last_import_line'] + 1, last_line)
+        if parser.structure['header_end_index'] == None:     # i.e. If there is no header, start the body from the beginning of the file
+            first_body_line = 1
+        else:
+            first_body_line = parser.structure['header_end_index'] + 2      # +2 because it's converting index to line value and starting at the next line
+
+        ctx['body'] = parser.get_text_slice_by_line(first_body_line, last_line)    # First line of Body until where to add the URLs.
         ctx['footer'] = parser.get_text_slice_by_line(last_line + 1, parser.structure['linecount'] + 1)
 
     else:
@@ -37,13 +43,14 @@ def url_ctx_flter(ctx, parser):
         ctx['header'] += ctx['body']
         ctx['body'] = None
 
+    pp.pprint(ctx)
     return ctx
 
 
 def admin_ctx_filter(ctx, parser):
 
-    pp = pprint.PrettyPrinter(indent=4)
-    pp.pprint(parser.structure)
+    # pp = pprint.PrettyPrinter(indent=4)
+    # pp.pprint(parser.structure)
 
     #########
     # FILE PARTS
