@@ -155,7 +155,11 @@ class PythonFileParser():
         for module in modules:
             # module = ('django.urls', 'path', 're_path')
 
-            if len(module) == 1:
+            mod_count = len(module)
+
+            if mod_count == 0:
+                continue
+            elif mod_count == 1:
                 if module[0] not in self.structure['import_list']:      # if the mosule is not already imported add it to the import block
                     result.append("import %s" % module[0] )
             else:
@@ -171,20 +175,19 @@ class PythonFileParser():
                     result.append("from %s import %s" % (from_path, ", ".join( import_mods ) ) )
                 else:
                     # If we are already importing the base module path, we now need to see if the module is already imported as part of the statement
-                    import_append = []
-                    import_index = None
+                    import_add = []
 
                     for im in import_mods:
                         if im not in from_dict[from_check]['import']:
-                            im.append(import_append)
+                            import_add.append(im)
 
-                    if import_append:
+                    if import_add:
                         import_index = from_dict[from_check]['index']
                         import_mods = from_dict[from_check]['import']
 
-                        import_mods.extend(import_append)
+                        import_mods.extend(import_add)
 
-                        result[import_index] = result.append("from %s import %s" % (from_path, ", ".join( import_mods ) ) )
+                        result[import_index] = "from %s import %s" % (from_path, ", ".join( import_mods ) )
 
         return "\n".join(result)
 
