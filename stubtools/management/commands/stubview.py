@@ -193,10 +193,10 @@ class Command(FileAppCommand):
         else:
             template_file = os.path.join("templates", *self.render_ctx['attributes']['template_name'][1:-1].split("/"))     # todo: get the template folder name from the settings
 
-        if render_ctx['resource_method'] in ["path", "re_path"]:
-            url_modules = [ ("django.urls", "path", "re_path"), ("views",) ]
+        if self.render_ctx['resource_method'] in ["path", "re_path"]:
+            url_module = ("django.urls", "path", "re_path")
         else:
-            url_modules = [ ("django.conf.urls", "url"), ("views",) ]
+            url_module = ("django.conf.urls", "url")
 
         # #######################
         # # RENDER THE TEMPLATES
@@ -204,16 +204,16 @@ class Command(FileAppCommand):
 
         ####
         # Views
-        self.write(view_file, self.render_ctx['view_class'], 
+        self.write( view_file, self.render_ctx['view_class'], 
                     template=view_template_file,
                     extra_ctx=self.render_ctx, 
-                    modules=[ (self.render_ctx['view_class_module'], self.render_ctx['view_class']) ])
+                    modules=[ (self.render_ctx['view_class_module'], self.render_ctx['view_class']) ] )
 
-        self.write(url_file, self.render_ctx['view_class'], 
+        self.write( url_file, self.render_ctx['view_class'], 
                     template=url_template_file,
                     extra_ctx=self.render_ctx, 
-                    modules=url_modules,
-                    filters=[url_ctx_flter])
+                    modules=[ url_module, (app, "views") ],
+                    filters=[ url_ctx_flter ] )
 
         if not os.path.exists(template_file):
             constructor_template = os.path.join('stubtools', 'stubview', self.render_ctx['constructor_template'])
