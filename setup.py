@@ -13,7 +13,7 @@ def load_description(file_path, file_name):
 
 data = {
     'name': 'django-stubtools',
-    'version': '0.8.0',
+    'version': '0.9.0',
     'description': "A set of tools for Django to help 'stub-out' an project quickly.",
     'long_description': load_description(PACKAGE_ROOT, 'README.md'),
     'license': 'BSD',
@@ -33,11 +33,11 @@ data = {
     'packages': ['stubtools', 'stubtools.core', 'stubtools.management', 'stubtools.management.commands', 'stubtools.tests'],
     'package_data': {'stubtools': ['templates/*.j2', 'templates/*.txt']},
     'python_requires': '>=2.7.0',
-    'install_requires': ["Django>=2.0.0", "Jinja2==2.10"],
+    'install_requires': ["Django>=2.0.0", "Jinja2>=2.11.3"],
     'extras_require': {
         'dev': [],
-        'docs': ["Sphinx==1.7.5", "coverage==4.5.1"],
-        'test': ["pytest==3.6.1", "coverage==4.5.1"],
+        'docs': ["Sphinx", "coverage"],
+        'test': ["pytest", "coverage"],
     },
     'entry_points': {
         'console_scripts': ['mayapm=mayapm.cmd:main'],
