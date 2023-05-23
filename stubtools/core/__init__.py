@@ -149,6 +149,14 @@ class FileAppCommand(AppCommand):
     logger = logging.getLogger(__name__)
     structure = {}
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--toscreen',
+            action='store_true',
+            dest='toscreen',
+            help='Prints results to screen instead of writing to files',
+        )
+
     def write_file(self, file_path, data, create_path=True):
         full_path = os.path.abspath(file_path)          # Make it a full path to reduce issues in parsing direcotry from file
         file_directory = os.path.dirname(full_path)
@@ -163,19 +171,7 @@ class FileAppCommand(AppCommand):
         FILE.close()
 
     def load_file(self, file_path):
-        # result = get_file_lines(file_path)
-        # return result
         self.parser = PythonFileParser(file_path)
-
-    # def parse_code(self, data):
-    #     '''
-    #     This is a tool that will return information about the Python code handed to it.
-    #     It can be used by tools to figure out where the last line of code is and where import
-    #     lines exist.  This is working to replace the use of regex to parse files.
-    #     '''
-    #     # Create the AST Tree and parse it
-    #     tree = ast.parse(data)
-    #     return ast_parse_code(tree)
 
     def sliced_ctx(self, file_path, new_class, template=None, extra_ctx={}, modules=[], filters=[]):
         if not os.path.isfile(file_path):
@@ -205,23 +201,25 @@ class FileAppCommand(AppCommand):
 
         return ctx
 
-    def write_template(self, ctx, path, template):
+    def write_template(self, ctx, path, template, toscreen=False):
         renderer = self.get_template(template)
         result = renderer.render(context=ctx)
 
-        if self.write_files:
-            self.write_file(path, result)
-        else:
+        if toscreen:
             print("\n")
             print( horizontal_rule() )
             print("%s RESULT:" % path)
             print( horizontal_rule() )
             print(result)
+        else:
+            self.write_file(path, result)
 
-    def write(self, file_path, new_class, template=None, extra_ctx={}, modules=[], filters=[]):
+
+    def write(self, file_path, new_class, template=None, extra_ctx={}, modules=[], filters=[], toscreen=False):
         ctx = self.sliced_ctx(file_path, new_class, template=template, extra_ctx=extra_ctx, modules=modules, filters=filters)
         self.write_template(ctx, file_path, template)
         print("Wrote File: \"%s\"" % file_path)
+
 
     def create_import_line(self, module, path=None, modules=[], comment=None, sort=False):
         mod_list = []                   # Start with just the required
@@ -284,17 +282,7 @@ class FileAppCommand(AppCommand):
 
         return [f.name for f in Model._meta.get_fields()]
 
+
     def get_template(self, path, using='jinja2'):
         return get_template(path, using=using)
 
-    # def get_import_line(self, imp_module):
-    #     '''
-    #     Returns where an module is imported.  'None' is returned if not already included.
-    #     '''
-    #     result = None
-
-    #     for imp in self.structure['imports']:
-    #         if  imp['from'] == imp_module:
-    #             result = imp['first_line']
-
-    #     return result

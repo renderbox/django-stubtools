@@ -24,7 +24,7 @@ class Command(FileAppCommand):
     view_file = None
     url_file = None
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **options):
         if len(args) < 1:
             raise CommandError('Need to pass App.View names')
 
@@ -33,7 +33,7 @@ class Command(FileAppCommand):
             for app_view in args:
                 # SPLIT THE APP, VIEW AND VIEW_CLASS
                 app, view, view_class = parse_app_input(app_view)
-                self.process(app, view, view_class)
+                self.process(app, view, view_class, toscreen=options['toscreen'])
         except KeyboardInterrupt:
             print("\nExiting...")
             return
@@ -178,7 +178,7 @@ class Command(FileAppCommand):
 
         return render_ctx
 
-    def process(self, app, view, view_class, **kwargs):
+    def process(self, app, view, view_class, toscreen=False, **kwargs):
 
         self.render_ctx = self.get_context(app, view, view_class, **kwargs)
 
